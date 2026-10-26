@@ -1,0 +1,25 @@
+{
+  "name": "@aids/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared contract schemas and TypeScript types for AI Design Studio. Consumed by the frontend; the API validates against the same JSON Schema files.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas/*": "./schemas/*"
+  },
+  "files": [
+    "src",
+    "schemas"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "ajv": "^8.17.1",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.5"
+  }
+}

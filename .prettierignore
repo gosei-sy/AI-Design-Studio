@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+bin/
+obj/
+coverage/
+playwright-report/
+test-results/
+.local-assets/
+package-lock.json
+
+# EF Core regenerates these; formatting them would be undone.
+**/Migrations/

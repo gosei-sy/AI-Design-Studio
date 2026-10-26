@@ -1,0 +1,80 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+max_line_length = 100
+
+[*.{cs,csx}]
+indent_size = 4
+
+# --- C# style rules enforced at build time ----------------------------------
+# EnforceCodeStyleInBuild is on in Directory.Build.props, and warnings are
+# errors, so these are gates rather than suggestions.
+[*.cs]
+csharp_using_directive_placement = outside_namespace:warning
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = true:warning
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# Private const and static readonly fields are PascalCase; private *instance*
+# fields are _camelCase. The two specific rules come first because the first
+# matching rule wins — with only the instance rule present, every private
+# constant would be flagged.
+dotnet_naming_rule.private_const_fields_pascal.severity = warning
+dotnet_naming_rule.private_const_fields_pascal.symbols = private_const_fields
+dotnet_naming_rule.private_const_fields_pascal.style = pascal_case_style
+dotnet_naming_symbols.private_const_fields.applicable_kinds = field
+dotnet_naming_symbols.private_const_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_const_fields.required_modifiers = const
+
+dotnet_naming_rule.private_static_readonly_pascal.severity = warning
+dotnet_naming_rule.private_static_readonly_pascal.symbols = private_static_readonly_fields
+dotnet_naming_rule.private_static_readonly_pascal.style = pascal_case_style
+dotnet_naming_symbols.private_static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly_fields.required_modifiers = static,readonly
+
+dotnet_naming_rule.private_fields_underscored.severity = warning
+dotnet_naming_rule.private_fields_underscored.symbols = private_fields
+dotnet_naming_rule.private_fields_underscored.style = underscore_camel_case
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+
+# Async methods end in Async.
+dotnet_naming_rule.async_methods_suffixed.severity = suggestion
+dotnet_naming_rule.async_methods_suffixed.symbols = async_methods
+dotnet_naming_rule.async_methods_suffixed.style = async_suffix
+dotnet_naming_symbols.async_methods.applicable_kinds = method
+dotnet_naming_symbols.async_methods.required_modifiers = async
+dotnet_naming_style.async_suffix.required_suffix = Async
+dotnet_naming_style.async_suffix.capitalization = pascal_case
+
+# EF Core writes migrations with a BOM and a block-scoped namespace, and
+# regenerates them on demand. Reformatting them by hand would be undone the next
+# time `dotnet ef migrations add` runs, so they are treated as generated code.
+[**/Migrations/*.cs]
+generated_code = true
+charset = utf-8-bom
+csharp_style_namespace_declarations = block_scoped:silent
+
+[*.{json,jsonc,yml,yaml}]
+indent_size = 2
+
+[*.md]
+# Trailing whitespace is significant for hard line breaks in Markdown.
+trim_trailing_whitespace = false
+
+[*.{sln,slnx}]
+indent_style = tab

@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/backend/" />
+  <Folder Name="/backend/src/">
+    <Project Path="backend/src/AIDesignStudio.Api/AIDesignStudio.Api.csproj" />
+    <Project Path="backend/src/AIDesignStudio.Application/AIDesignStudio.Application.csproj" />
+    <Project Path="backend/src/AIDesignStudio.Domain/AIDesignStudio.Domain.csproj" />
+    <Project Path="backend/src/AIDesignStudio.Infrastructure/AIDesignStudio.Infrastructure.csproj" />
+    <Project Path="backend/src/AIDesignStudio.SharedKernel/AIDesignStudio.SharedKernel.csproj" />
+    <Project Path="backend/src/AIDesignStudio.Worker/AIDesignStudio.Worker.csproj" />
+  </Folder>
+  <Folder Name="/backend/tests/">
+    <Project Path="backend/tests/AIDesignStudio.ArchitectureTests/AIDesignStudio.ArchitectureTests.csproj" />
+    <Project Path="backend/tests/AIDesignStudio.IntegrationTests/AIDesignStudio.IntegrationTests.csproj" />
+    <Project Path="backend/tests/AIDesignStudio.UnitTests/AIDesignStudio.UnitTests.csproj" />
+  </Folder>
+</Solution>

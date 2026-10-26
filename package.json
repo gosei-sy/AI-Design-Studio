@@ -1,0 +1,24 @@
+{
+  "name": "ai-design-studio",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI Design Studio — monorepo root. The .NET solution is built separately; see README.md.",
+  "workspaces": [
+    "frontend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "lint": "npm run lint --workspace frontend",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "audit:prod": "npm audit --omit=dev --audit-level=high"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.8.1"
+  }
+}

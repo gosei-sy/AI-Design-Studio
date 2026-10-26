@@ -1,0 +1,219 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref; a stale result is only misleading.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  backend:
+    name: Backend (build, test, migrations)
+    runs-on: ubuntu-latest
+
+    # A real PostgreSQL instance rather than an in-memory provider: the job
+    # queue's claim semantics depend on FOR UPDATE SKIP LOCKED, and the
+    # single-approved-version invariants depend on filtered unique indexes.
+    # Neither can be verified without Postgres.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: aids
+          POSTGRES_PASSWORD: aids_dev_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aids"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/*.csproj"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        # Warnings are errors via Directory.Build.props, so this also gates style.
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Verify formatting
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Test
+        # Covers unit, architecture-boundary and integration suites. The
+        # integration fixture provisions a throwaway database per run, which is
+        # what proves migrations apply cleanly from empty.
+        run: dotnet test --no-build --configuration Release
+        env:
+          AIDS_TEST_CONNECTION: "Host=localhost;Port=5432;Database=postgres;Username=aids;Password=aids_dev_only"
+
+      - name: Check migrations are in sync with the model
+        # Catches a model change committed without its migration: the most common
+        # way a branch passes locally and then fails to deploy.
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.*
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet-ef migrations has-pending-model-changes \
+            --project backend/src/AIDesignStudio.Infrastructure \
+            --startup-project backend/src/AIDesignStudio.Api \
+            --no-build --configuration Release
+
+      - name: Audit NuGet dependencies
+        # Advisories are reported as warnings by restore; this makes them fail.
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee audit.txt
+          if grep -qiE '(High|Critical)' audit.txt; then
+            echo "::error::High or critical NuGet advisory found."
+            exit 1
+          fi
+
+  frontend:
+    name: Frontend (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        # Frontend unit/component tests plus the shared contract schema tests.
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Audit runtime dependencies
+        # Scoped to runtime deps on purpose. Dev-only advisories are tracked in
+        # docs/04-engineering/SECURITY_REQUIREMENTS.md rather than blocking CI,
+        # because some have no upstream fix and would make the gate permanently red.
+        run: npm run audit:prod
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: aidesignstudio
+          POSTGRES_USER: aids
+          POSTGRES_PASSWORD: aids_dev_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aids"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright browsers
+        # The workspace binary, not `npx playwright`. `npx` prefers the local
+        # install but silently downloads a different version when it cannot
+        # resolve one, and each Playwright release pins its own browser build —
+        # 1.64.1 wants chromium-headless-shell v1248. Installing with the wrong
+        # version downloads a build the test run then cannot find, which is how
+        # M01-11 presented locally. This path can only resolve the lockfile
+        # version.
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Apply migrations
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.*
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet-ef database update \
+            --project backend/src/AIDesignStudio.Infrastructure \
+            --startup-project backend/src/AIDesignStudio.Api
+        env:
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=aidesignstudio;Username=aids;Password=aids_dev_only"
+
+      - name: Start API
+        # Started explicitly rather than by Playwright: the API is a separately
+        # deployed process, and having the test harness own it would hide that.
+        run: |
+          dotnet run --project backend/src/AIDesignStudio.Api --configuration Release &
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5080/health/ready > /dev/null; then
+              echo "API ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::API did not become ready within 60s."
+          exit 1
+        env:
+          ASPNETCORE_URLS: http://localhost:5080
+          ASPNETCORE_ENVIRONMENT: Development
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=aidesignstudio;Username=aids;Password=aids_dev_only"
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:5080
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e --workspace frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:5080
+
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7

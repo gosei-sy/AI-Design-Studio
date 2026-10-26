@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aidesignstudio.dev/schemas/design-system-v1.json",
+  "title": "Design System v1",
+  "description": "The approved token set and component rules screens must conform to. Deliberately richer than any AI provider's native theme model: provider themes are produced by projecting this (lossily) at request time, never by importing theirs. Sections marked as not projectable are enforced studio-side only. See docs/02-architecture/decisions/ADR-0004-provider-theme-projection-is-lossy.md.",
+  "type": "object",
+  "required": ["schemaVersion", "name", "typography", "color", "shape"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "typography": {
+      "type": "object",
+      "required": ["bodyFont", "headlineFont"],
+      "additionalProperties": false,
+      "properties": {
+        "bodyFont": {
+          "$ref": "#/$defs/fontFamily"
+        },
+        "headlineFont": {
+          "$ref": "#/$defs/fontFamily"
+        },
+        "labelFont": {
+          "$ref": "#/$defs/fontFamily"
+        },
+        "scale": {
+          "type": "object",
+          "description": "Named type styles. Projectable: Stitch accepts a free-form typography map.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fontFamily": {
+                "type": "string"
+              },
+              "fontSize": {
+                "$ref": "#/$defs/cssLength"
+              },
+              "fontWeight": {
+                "type": "string",
+                "pattern": "^[1-9]00$|^(normal|bold)$"
+              },
+              "lineHeight": {
+                "type": "string"
+              },
+              "letterSpacing": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "color": {
+      "type": "object",
+      "required": ["roles"],
+      "additionalProperties": false,
+      "description": "Semantic colour roles, plus the colour modes the design system defines. Roles and modes are separate objects because they are different kinds of value: every role is a hex colour, so `roles` can carry an `additionalProperties` contract that a TypeScript index signature expresses exactly. Nesting `modes` among the roles forced that signature to admit arrays too, which let a type-checked payload carry `danger: [\"light\"]` and be rejected at runtime (M00-R3-002).",
+      "properties": {
+        "roles": {
+          "type": "object",
+          "required": ["primary"],
+          "description": "Only primary, secondary, tertiary and neutral have a Stitch theme slot; any other role is studio-enforced only and the projection reports it as dropped.",
+          "properties": {
+            "primary": {
+              "$ref": "#/$defs/hexColor"
+            },
+            "secondary": {
+              "$ref": "#/$defs/hexColor"
+            },
+            "tertiary": {
+              "$ref": "#/$defs/hexColor"
+            },
+            "neutral": {
+              "$ref": "#/$defs/hexColor"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/hexColor"
+          }
+        },
+        "modes": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "enum": ["light", "dark"]
+          },
+          "description": "Stitch carries a single colorMode, so declaring both modes means only the first projects. The second needs a separate provider design system."
+        }
+      }
+    },
+    "shape": {
+      "type": "object",
+      "required": ["radiusBase"],
+      "additionalProperties": false,
+      "properties": {
+        "radiusBase": {
+          "$ref": "#/$defs/cssLength",
+          "description": "Base corner radius. Stitch exposes a five-step enum (2/4/8/12/full px), so other values snap to the nearest step with a warning."
+        }
+      }
+    },
+    "spacing": {
+      "type": "object",
+      "description": "Named spacing units. Projectable: Stitch accepts a free-form spacing map.",
+      "additionalProperties": {
+        "$ref": "#/$defs/cssLength"
+      }
+    },
+    "elevation": {
+      "type": "object",
+      "description": "NOT projectable. Stitch's theme model has no elevation or shadow tokens.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "motion": {
+      "type": "object",
+      "description": "NOT projectable. Stitch's theme model has no motion or easing tokens.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "breakpoints": {
+      "type": "object",
+      "description": "NOT projectable. Stitch targets a device enum, not author-defined breakpoints.",
+      "additionalProperties": {
+        "$ref": "#/$defs/cssLength"
+      }
+    },
+    "borders": {
+      "type": "object",
+      "description": "NOT projectable. Stitch exposes roundness only.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "components": {
+      "type": "object",
+      "description": "NOT projectable. Stitch has no component-variant model; these rules are checked during review.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hexColor": {
+      "type": "string",
+      "pattern": "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+    },
+    "cssLength": {
+      "type": "string",
+      "pattern": "^(?:0|[0-9]*\\.?[0-9]+(?:px|rem|em|%|vh|vw))$"
+    },
+    "fontFamily": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "CSS family name. A family with no Stitch equivalent falls back to Inter in the provider preview, with a reported warning; the studio still enforces the real family."
+    }
+  }
+}

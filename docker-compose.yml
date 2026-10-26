@@ -1,0 +1,37 @@
+# Local development infrastructure.
+#
+# Deliberately minimal: PostgreSQL and nothing else. The API and worker run on
+# the host via `dotnet run` so that debugging and hot reload work normally.
+# No message broker, no Kubernetes, no service mesh — the durable job queue
+# lives in PostgreSQL (see ADR-0005), so Postgres is the only dependency.
+#
+# These credentials are development-only and are intentionally committed; they
+# grant access to nothing outside this container. Real credentials come from the
+# environment and are never committed (see docs/04-engineering/SECURITY_REQUIREMENTS.md).
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: aids-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aidesignstudio
+      POSTGRES_USER: aids
+      POSTGRES_PASSWORD: aids_dev_only
+      # Deterministic collation, so index ordering matches across machines.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Without this, the API can start before Postgres accepts connections and
+      # fail its first migration.
+      test: ["CMD-SHELL", "pg_isready -U aids -d aidesignstudio"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres-data:
