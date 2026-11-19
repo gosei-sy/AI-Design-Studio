@@ -86,7 +86,7 @@ dotnet test                                    # 477 tests
 dotnet format --verify-no-changes
 
 # Frontend and shared contracts
-npm test                             # 14 + 164 tests
+npm test                             # 19 + 164 tests
 npm run typecheck
 npm run lint
 npm run format:check
@@ -121,7 +121,7 @@ when 57 skipped.
 | :--------------------------------- | :---------------------------------------------------------------------------------------------------------- |
 | Docker may be unavailable          | `docker-compose.yml` is **unverified**. Install PostgreSQL natively instead.                                |
 | No Stitch credentials              | Live generation unverifiable. See SPIKE-02 for the test plan.                                               |
-| Playwright E2E needs both services | **7/7 pass locally** (M01-11); the CI run is still outstanding. Needs the API and the HTTPS studio running. |
+| Playwright E2E needs both services | **9/9 pass locally** (M01-11); the CI run is still outstanding. Needs the API and the HTTPS studio running. |
 
 Report a gap; do not paper over it.
 

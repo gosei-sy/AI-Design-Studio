@@ -45,15 +45,16 @@ Failures use RFC 9457 problem details. Domain invariant violations map from
 **Clients must branch on `code`, never on `detail`.** Codes are a contract;
 messages are for humans and may change without notice.
 
-| Status    | When                                                                           |
-| :-------- | :----------------------------------------------------------------------------- |
-| 400       | Payload fails JSON Schema validation                                           |
-| 401 / 403 | **(planned, M01)**                                                             |
-| 404       | Resource or provider not found                                                 |
-| 409       | Domain invariant violated (`DomainException`)                                  |
-| 422       | Semantically invalid but well-formed (e.g. flow references an unlisted screen) |
-| 429       | **(planned, M02)** rate or quota limit                                         |
-| 503       | Dependency unavailable                                                         |
+| Status | When                                                                                                |
+| :----- | :-------------------------------------------------------------------------------------------------- |
+| 400    | Payload fails JSON Schema validation                                                                |
+| 401    | No session. Every non-health endpoint, by the fallback policy (M01-02)                              |
+| 403    | Signed in, but no active membership (`authz.no_organization_membership`) or a missing role (M01-03) |
+| 404    | Resource or provider not found                                                                      |
+| 409    | Domain invariant violated (`DomainException`)                                                       |
+| 422    | Semantically invalid but well-formed (e.g. flow references an unlisted screen)                      |
+| 429    | **(planned, M02)** rate or quota limit                                                              |
+| 503    | Dependency unavailable                                                                              |
 
 ### Domain error codes
 
@@ -413,9 +414,14 @@ screenshot (`Visual`) can never be mistaken for a structural import
 | `GET`  | `/api/v1/jobs/{id}`        | State, attempt, `lastError` |
 | `POST` | `/api/v1/jobs/{id}/cancel` | 409 `job.already_terminal`  |
 
-Both must use an **organization-scoped** query. `IJobQueue.GetAsync` is
-deliberately unfiltered for worker-internal use, and reusing it at the HTTP
-boundary would be a cross-tenant read.
+Both must use an **organization-scoped** query. `IJobQueue.GetAsync` reads
+through `db.Jobs`, which carries the organization query filter since W3-001, so
+in the API host it returns only the caller's organization's jobs — **once
+`IOrganizationContext` has opened the request's scope**; before that it returns
+nothing, because the scope starts closed. In the worker the same call is
+system-scoped and sees every tenant. The claim is raw SQL and unfiltered, and is
+protected by running only in the worker. (This note used to say `GetAsync` was
+unfiltered; that stopped being true when W3-001 filtered all seven roots.)
 
 ---
 

@@ -29,6 +29,8 @@ adapters with their declared capabilities, and missing credential **names**.
 | loading               | `Checking environment…` inside a Suspense boundary while the shell is already painted | ✅ (build output shows partial prerender) |
 | error                 | `role="alert"` with an actionable message naming the API URL                          | ✅                                        |
 | provider-unconfigured | Provider listed, `isUsable: false`, missing credentials named                         | ✅                                        |
+| signed-out            | `Sign in to view provider status.`; health still shown                                | ✅ E2E                                    |
+| signed-in             | Provider status shown — the server render forwards the visitor's session (2026-11-19) | ✅ E2E                                    |
 | no-adapters           | `No provider adapters reported.`                                                      | ✅                                        |
 
 Why it exists: every later milestone depends on knowing whether the environment
@@ -48,7 +50,10 @@ in the rendered output.
 
 States: default · submitting · invalid-credentials · locked-out · provider-error
 
-Blocked on the authorization decision (assumption A-01).
+No longer blocked. A-01 was closed by D-3 (two roles, Member and Approver), the
+mechanism is ADR-0008 (local Identity, same-origin cookie/BFF session), and the
+API it calls exists since M01-02 (`/api/v1/auth/login`, lockout included). The
+screen itself is M01-10 and is not built.
 
 ### S-03 — Project list
 

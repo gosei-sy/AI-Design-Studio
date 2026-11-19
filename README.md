@@ -16,7 +16,7 @@ rounds returned CHANGES REQUIRED and all nine findings are corrected, so it
 awaits independent re-acceptance** — it is not accepted yet.
 
 There is no product UI yet; the single page reports environment status. The
-Playwright E2E suite runs — **7/7 specs pass** against both services, including
+Playwright E2E suite runs — **9/9 specs pass** against both services, including
 the full browser auth flow. `docker-compose.yml` remains **unverified** because
 Docker is not installed here (M01-12). See
 [docs/05-delivery/IMPLEMENTATION_STATUS.md](docs/05-delivery/IMPLEMENTATION_STATUS.md).
@@ -213,8 +213,8 @@ Then open <https://localhost:3000>.
 ## Tests
 
 ```bash
-dotnet test                 # 304: unit + architecture + integration
-npm test                    # 178: 14 frontend + 164 contract schema
+dotnet test                 # 477: unit + architecture + integration
+npm test                    # 183: 19 frontend + 164 contract schema
 ```
 
 Integration tests provision a throwaway database per run and migrate it from
@@ -258,7 +258,7 @@ processes:
 (cd frontend && ./node_modules/.bin/playwright install chromium)
 
 dotnet run --project backend/src/AIDesignStudio.Api &
-npm run test:e2e --workspace frontend     # 7 passed
+npm run test:e2e --workspace frontend     # 9 passed
 ```
 
 Playwright starts the frontend itself over HTTPS and proxies to the API, so the
@@ -300,15 +300,16 @@ free dry-run planning. Enable it deliberately or not at all.
 ```
 backend/src/
   AIDesignStudio.SharedKernel      Entity, IClock, DomainException
-  AIDesignStudio.Domain            7 modules; invariants; no infrastructure
+  AIDesignStudio.Domain            8 modules; invariants; no infrastructure
   AIDesignStudio.Application       ports, provider capability contracts
   AIDesignStudio.Infrastructure    EF Core, storage, provider adapters, parsers
   AIDesignStudio.Api               HTTP host
   AIDesignStudio.Worker            durable job dispatcher
+  AIDesignStudio.Provisioning      aids-provision — operator provisioning CLI (ADR-0009)
 backend/tests/
-  AIDesignStudio.UnitTests         185 tests
-  AIDesignStudio.IntegrationTests   57 tests (needs PostgreSQL)
-  AIDesignStudio.ArchitectureTests  16 tests (module boundaries)
+  AIDesignStudio.UnitTests         262 tests
+  AIDesignStudio.IntegrationTests  190 tests (needs PostgreSQL)
+  AIDesignStudio.ArchitectureTests  25 tests (boundary + organization-scope guards)
 frontend/                          Next.js studio
 packages/contracts/                shared JSON Schemas + TypeScript types
 docs/                              see below

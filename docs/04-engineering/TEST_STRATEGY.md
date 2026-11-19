@@ -12,13 +12,14 @@ have an automated test. An invariant without a test is not implemented.
 | `AIDesignStudio.UnitTests`         |     262 | nothing    | ~7 s       |
 | `AIDesignStudio.ArchitectureTests` |      25 | nothing    | ~7 s       |
 | `AIDesignStudio.IntegrationTests`  |     190 | PostgreSQL | ~95 s      |
-| `frontend` (Vitest)                |      14 | nothing    | ~43 s      |
+| `frontend` (Vitest)                |      19 | nothing    | ~43 s      |
 | `packages/contracts` (Vitest)      |     164 | nothing    | ~6 s       |
-| **Total**                          | **655** |            | **~2 min** |
+| **Total**                          | **660** |            | **~2 min** |
 
-Measured on 2026-11-05, after the M01 Wave 3 **re-review round 2** corrections.
-The backend suite is `477` of that total (`dotnet test`), and the frontend `178`
-(`npm test`).
+Measured on 2026-11-19. The backend figures are unchanged since the M01 Wave 3
+**re-review round 2** corrections (2026-11-05); the frontend gained five tests
+for the server-side session forwarding fixed that day. The backend suite is
+`477` of that total (`dotnet test`), and the frontend `183` (`npm test`).
 
 **`MigrationUpgradeTests` is a shape this suite did not have before.** It starts
 at a _named prior migration_, seeds the rows a real deployment would already
@@ -126,7 +127,7 @@ What needs a real database and why:
 
 ### End-to-end tests — the browser boundary
 
-Seven Playwright specs, run against both real services with the studio over
+Nine Playwright specs, run against both real services with the studio over
 HTTPS proxying the API. Three drive the full authentication flow: antiforgery
 token, registration, login, **the session cookie actually landing in the
 browser's jar** with `HttpOnly`/`Secure`/`SameSite=Strict`, an authenticated
@@ -135,8 +136,16 @@ call, logout, and antiforgery rejection.
 They exist because M01-02 twice shipped an auth API that worked in `TestServer`
 and failed in a browser. In-process tests do not enforce `Secure`, do not apply
 schemeful `SameSite`, and have no cookie jar that can refuse. **Counted
-separately from the 655** — they need two running processes, so they are not part
+separately from the 660** — they need two running processes, so they are not part
 of `dotnet test` or `npm test`.
+
+**Two more were added on 2026-11-19, both for defects found by screenshot.** A
+signed-in visitor must see provider status: the page is rendered on the server,
+which used to call the API without the visitor's session, so a signed-in visitor
+was told to sign in — and the anonymous spec passes either way, so nothing
+noticed. And the page must render in the studio typeface: `--font-sans` resolved
+to itself and every page fell back to the browser's serif. Both specs were run
+against the unfixed code first and failed on exactly those defects.
 
 **M01-03 added no E2E spec.** Its guarantees are status codes, visible rows and
 refused writes, all of which the integration suite asserts against the real host;
@@ -146,9 +155,15 @@ covered by `auth.spec.ts` in M01-02.
 
 ### Frontend tests
 
-`api.test.ts` (8) covers request shaping, error classification, the
-unreachable-API path, and that credential **names** are surfaced without values.
-`system-status.test.tsx` (6) covers each render state including the degraded one.
+`api.test.ts` (9) covers request shaping, error classification, the
+unreachable-API path, that credential **names** are surfaced without values, and
+that the browser never sets a `Cookie` header itself.
+`api.server.test.ts` (4) runs in the `node` environment — the only one where the
+client takes its server-side path, since the rest of the suite runs under jsdom —
+and covers forwarding the visitor's `Cookie` header, calling the API origin
+rather than the proxy path, and **never caching a request that carries a
+session**. `system-status.test.tsx` (6) covers each render state including the
+degraded one.
 
 ### Contract schema tests
 
@@ -173,8 +188,8 @@ run; removing one from TypeScript fails `tsc` with
 
 ### End-to-end — ✅ executed locally, CI run outstanding
 
-**7 Playwright specs, 7 passing**, run against both real services with the studio
-over HTTPS proxying the API. `frontend/e2e/status.spec.ts` (4) and
+**9 Playwright specs, 9 passing** (2026-11-19), run against both real services
+with the studio over HTTPS proxying the API. `frontend/e2e/status.spec.ts` (6) and
 `frontend/e2e/auth.spec.ts` (3).
 
 **Historical note.** Through M00 this section read "⚠ unverified — 4 specs, not
@@ -345,8 +360,8 @@ Stated rather than implied.
 
 ```bash
 # Everything
-dotnet test                                    # 339
-npm test                                       # 14 + 164
+dotnet test                                    # 477
+npm test                                       # 19 + 164
 
 # One suite
 dotnet test --project backend/tests/AIDesignStudio.UnitTests/AIDesignStudio.UnitTests.csproj
@@ -361,7 +376,11 @@ dotnet test -p:TestingPlatformShowTestsFailure=true
 # SQL for a persistence failure
 AIDS_TEST_SQL_LOG=1 dotnet test --project backend/tests/AIDesignStudio.IntegrationTests/...
 
-# E2E — 7/7 locally. Needs the API running; Playwright starts the HTTPS studio.
+# E2E — 9/9 locally. Needs the API running; Playwright starts the HTTPS studio.
+# On Windows, `next dev --experimental-https` runs mkcert, which installs a root
+# CA into the user's trust store. To avoid that, start the studio yourself on
+# :3100 with `--experimental-https-key/--experimental-https-cert` pointing at a
+# throwaway self-signed localhost certificate; Playwright reuses a running server.
 dotnet run --project backend/src/AIDesignStudio.Api &
 npm run test:e2e --workspace frontend
 ```

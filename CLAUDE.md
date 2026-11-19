@@ -28,7 +28,8 @@ defect, regardless of whether it compiles.
 
 ### 2. Never silently change an approved architectural decision
 
-The seven ADRs are accepted. To change one:
+All nine ADRs are accepted (0001–0007 in M00; 0008 and 0009, with their
+amendments, in M01). To change one:
 
 1. Write a new ADR that supersedes it, with context and consequences.
 2. Update the old ADR's status line to `Superseded by ADR-NNNN`.
@@ -106,7 +107,7 @@ Run these and paste the real output. Never report a result you did not observe.
 dotnet build                                   # warnings are errors
 dotnet test                                    # 477 tests
 dotnet format --verify-no-changes              # style gate
-npm test                                       # 14 frontend + 164 contract tests
+npm test                                       # 19 frontend + 164 contract tests
 npm run typecheck && npm run lint
 npm run format:check
 npm run build --workspace frontend
@@ -190,7 +191,7 @@ world-readable.
 ```
 backend/src/
   AIDesignStudio.SharedKernel      Entity, IClock, DomainException
-  AIDesignStudio.Domain            7 modules, invariants, no infrastructure
+  AIDesignStudio.Domain            8 modules, invariants, no infrastructure
   AIDesignStudio.Application       ports, capability contracts
   AIDesignStudio.Infrastructure    EF Core, storage, provider adapters, parsers
   AIDesignStudio.Api               HTTP host
