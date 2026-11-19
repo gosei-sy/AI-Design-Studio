@@ -27,6 +27,16 @@ builder.Services.AddSessionAuthentication();
 // runs and returns a stable 400.
 builder.Services.AddValidation();
 
+// An unreadable body is the caller's error, so it is a 400 — in every
+// environment. Minimal APIs default ThrowOnBadRequest to true in Development,
+// expecting a developer exception page to render the BadHttpRequestException.
+// This host has none (the exception handler below runs everywhere), so in
+// Development a body that was not JSON became an unexplained 500 on every
+// endpoint, while Production already answered 400. Found by M01-04's suite:
+// ProjectEndpointsTests.A_malformed_body_is_a_400_problem_not_a_500.
+builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(
+    options => options.ThrowOnBadRequest = false);
+
 builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = context =>
     {
@@ -141,6 +151,7 @@ app.UseAntiforgery();
 app.MapHealthEndpoints();
 app.MapAuthEndpoints();
 app.MapOrganizationEndpoints();
+app.MapProjectEndpoints();
 app.MapProviderEndpoints();
 
 app.Run();
