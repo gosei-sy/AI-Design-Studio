@@ -22,11 +22,11 @@ namespace AIDesignStudio.Api.Endpoints;
 /// never existed (M01-03).</para>
 ///
 /// <para><b>Roles.</b> Reading needs any active membership. Creating needs the
-/// Member role: <see cref="Domain.Organizations.OrganizationRoles.Member"/> is
-/// "may read and author", and an Approver-only membership is legal. That reading
-/// is assumption A-16, open for the Product Owner. Both refusals are coded 403s
-/// rather than the bare 403 a policy would give, so the studio can say what to
-/// do next.</para>
+/// Member role, as a policy: <see cref="Domain.Organizations.OrganizationRoles.Member"/>
+/// is "may read and author", and an Approver-only membership is legal. That
+/// reading is assumption A-16. Every refusal is a coded 403 — the policy's
+/// through <see cref="OrganizationForbiddenResultHandler"/> — so the studio can
+/// say what to do next.</para>
 ///
 /// <para><b><c>kind</c> is chosen once.</b> There is no update endpoint, and
 /// <c>ProjectEndpointsTests.Only_project_creation_binds_a_kind</c> fails if any
@@ -51,17 +51,11 @@ internal static class ProjectEndpoints
                 IClock clock,
                 CancellationToken cancellationToken) =>
             {
-                var access = await organizations.GetAccessAsync(cancellationToken);
-
-                if (access is null)
-                {
-                    return OrganizationEndpoints.NoMembership();
-                }
-
-                if (!access.IsMember)
-                {
-                    return MemberRequired();
-                }
+                // The Member policy has already proved the membership and the
+                // role; this reads the same resolved answer.
+                var access = await organizations.GetAccessAsync(cancellationToken)
+                    ?? throw new InvalidOperationException(
+                        "The Member policy succeeded without a resolvable membership.");
 
                 // Validation has already proved both fields present and the kind
                 // a defined name, so the null-forgiving operators state a fact.
@@ -73,6 +67,7 @@ internal static class ProjectEndpoints
 
                 return Results.Created($"{Route}/{project.Id}", Describe(project));
             })
+            .RequireAuthorization(OrganizationPolicies.Member)
             .AddEndpointFilter<AntiforgeryEndpointFilter>()
             .WithSummary("Creates a project in the caller's organization. Member role. Kind is immutable.");
 
@@ -84,7 +79,7 @@ internal static class ProjectEndpoints
             {
                 if (await organizations.GetAccessAsync(cancellationToken) is null)
                 {
-                    return OrganizationEndpoints.NoMembership();
+                    return OrganizationProblems.NoMembership();
                 }
 
                 // No organization predicate, deliberately: the query filter is
@@ -109,7 +104,7 @@ internal static class ProjectEndpoints
             {
                 if (await organizations.GetAccessAsync(cancellationToken) is null)
                 {
-                    return OrganizationEndpoints.NoMembership();
+                    return OrganizationProblems.NoMembership();
                 }
 
                 var project = await db.Projects.AsNoTracking()
@@ -138,20 +133,13 @@ internal static class ProjectEndpoints
     /// The same body for "in another organization" and "does not exist", so the
     /// response cannot be used to learn that someone else's project exists.
     /// </summary>
-    private static IResult NotFound() => Results.Problem(
+    internal static IResult NotFound() => Results.Problem(
         type: "https://aidesignstudio.dev/problems/project.not_found",
         title: "Project not found",
         statusCode: StatusCodes.Status404NotFound,
         detail: "No such project.",
         extensions: new Dictionary<string, object?> { ["code"] = "project.not_found" });
 
-    private static IResult MemberRequired() => Results.Problem(
-        type: "https://aidesignstudio.dev/problems/authz.member_required",
-        title: "Member role required",
-        statusCode: StatusCodes.Status403Forbidden,
-        detail: "Creating a project is authoring, which needs the Member role. This account " +
-                "holds Approver only in its organization; an operator can add Member.",
-        extensions: new Dictionary<string, object?> { ["code"] = "authz.member_required" });
 }
 
 /// <summary>

@@ -122,6 +122,11 @@ internal static class SessionAuthentication
         services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler,
             OrganizationRoleHandler>();
 
+        // Turns a role policy's refusal into a coded 403 (M01-05). Scoped: it
+        // reads the request's already-resolved membership.
+        services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler,
+            OrganizationForbiddenResultHandler>();
+
         // Resolves the caller's membership and opens the request's data scope.
         // Registered here rather than in AddInfrastructure because it depends on
         // ICurrentUser: there is no "current caller" in the worker or the

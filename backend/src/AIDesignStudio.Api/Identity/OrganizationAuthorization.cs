@@ -15,6 +15,13 @@ internal static class OrganizationPolicies
     /// carry when those endpoints are built (M01-05).
     /// </summary>
     public const string Approver = "organization.approver";
+
+    /// <summary>
+    /// The Member role, for authoring: creating a project, drafting or editing
+    /// a contract (M01-04, M01-05). An Approver-only membership does not satisfy
+    /// it — assumption A-16.
+    /// </summary>
+    public const string Member = "organization.member";
 }
 
 /// <summary>
@@ -77,6 +84,10 @@ internal static class OrganizationAuthorizationExtensions
         options.AddPolicy(OrganizationPolicies.Approver, policy => policy
             .RequireAuthenticatedUser()
             .AddRequirements(new OrganizationRoleRequirement(OrganizationRoles.Approver)));
+
+        options.AddPolicy(OrganizationPolicies.Member, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new OrganizationRoleRequirement(OrganizationRoles.Member)));
 
         return options;
     }

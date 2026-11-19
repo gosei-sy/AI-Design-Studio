@@ -167,16 +167,7 @@ internal static class OrganizationEndpoints
     /// bare 403: the caller is asking about their own account, so there is no
     /// enumeration risk, and "ask an operator" is the only useful next step.
     /// </summary>
-    internal static IResult NoMembership() => Results.Problem(
-        type: "https://aidesignstudio.dev/problems/authz.no_organization_membership",
-        title: "No organization membership",
-        statusCode: StatusCodes.Status403Forbidden,
-        detail: "This account is not a member of any organization. Access is granted by a trusted " +
-                "operator (decision D-9); registering an account does not grant it.",
-        extensions: new Dictionary<string, object?>
-        {
-            ["code"] = "authz.no_organization_membership",
-        });
+    private static IResult NoMembership() => OrganizationProblems.NoMembership();
 
     private static IResult NotFound() => Results.Problem(
         type: "https://aidesignstudio.dev/problems/organization.not_found",
