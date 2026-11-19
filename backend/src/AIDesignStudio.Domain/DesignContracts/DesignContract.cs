@@ -122,6 +122,28 @@ public sealed class DesignContract : AggregateRoot
     }
 
     /// <summary>
+    /// Replaces the open draft's payload — "edit the contract", as a caller
+    /// means it (M01-05).
+    ///
+    /// <para>On the aggregate rather than left to callers, so nothing outside
+    /// chooses which version an edit lands on. With no draft open, the edit is
+    /// aimed at the newest version and that version's own guard refuses it:
+    /// <c>contract.version_immutable</c> when the contract is approved, which is
+    /// the answer the studio has to explain. A contract with no versions at all
+    /// has nothing to edit, and says <c>contract.no_draft</c>.</para>
+    /// </summary>
+    public DesignContractVersion UpdateDraft(string payloadJson, IClock clock)
+    {
+        var target = DraftVersion
+            ?? _versions.MaxBy(v => v.VersionNumber)
+            ?? throw new DomainException("contract.no_draft", "There is no draft version to edit.");
+
+        target.UpdatePayload(payloadJson, clock);
+        Touch(clock);
+        return target;
+    }
+
+    /// <summary>
     /// Approves the open draft and supersedes the previously approved version.
     /// This is the only transition that changes what the rest of the system treats
     /// as authoritative, so it is deliberately the only way to produce an

@@ -183,6 +183,77 @@ public sealed class DesignContractTests
         (contract.Versions as List<DesignContractVersion>).ShouldBeNull();
     }
 
+    // --- UpdateDraft (M01-05) ------------------------------------------------
+    // "Edit the contract" as the API means it: there is one editable thing, the
+    // open draft. The aggregate decides what an edit means when there is none,
+    // so the HTTP layer cannot pick a version to modify.
+
+    [Fact]
+    public void UpdateDraft_replaces_the_open_drafts_payload_and_stamps_the_contract()
+    {
+        var contract = NewContract();
+        contract.StartDraft("""{"v":1}""", _clock);
+        _clock.Advance(TimeSpan.FromMinutes(3));
+
+        var draft = contract.UpdateDraft("""{"v":"edited"}""", _clock);
+
+        draft.ShouldBe(contract.DraftVersion);
+        draft.PayloadJson.ShouldBe("""{"v":"edited"}""");
+        draft.VersionNumber.ShouldBe(1);
+        contract.UpdatedAt.ShouldBe(_clock.UtcNow);
+    }
+
+    /// <summary>
+    /// The case the studio must explain: the contract is approved and someone
+    /// tries to change it. That is <c>contract.version_immutable</c>, raised by
+    /// the version's own guard, and the approved payload is untouched.
+    /// </summary>
+    [Fact]
+    public void UpdateDraft_with_no_draft_open_refuses_to_touch_the_approved_version()
+    {
+        var contract = NewContract();
+        contract.StartDraft("""{"v":1}""", _clock);
+        var approved = contract.ApproveDraft("alice", _clock);
+
+        Should.Throw<DomainException>(() => contract.UpdateDraft("""{"v":"tampered"}""", _clock))
+            .Code.ShouldBe("contract.version_immutable");
+
+        approved.PayloadJson.ShouldBe("""{"v":1}""");
+        approved.PayloadHash.ShouldBe(DesignContractVersion.ComputeHash("""{"v":1}"""));
+    }
+
+    [Fact]
+    public void UpdateDraft_on_a_contract_with_no_versions_reports_that_there_is_no_draft()
+    {
+        Should.Throw<DomainException>(() => NewContract().UpdateDraft("""{"v":1}""", _clock))
+            .Code.ShouldBe("contract.no_draft");
+    }
+
+    [Fact]
+    public void UpdateDraft_after_a_discard_reports_the_approved_version_as_immutable()
+    {
+        var contract = NewContract();
+        contract.StartDraft("""{"v":1}""", _clock);
+        contract.ApproveDraft("alice", _clock);
+        contract.StartDraft("""{"v":2}""", _clock);
+        contract.DiscardDraft(_clock);
+
+        Should.Throw<DomainException>(() => contract.UpdateDraft("""{"v":3}""", _clock))
+            .Code.ShouldBe("contract.version_immutable");
+    }
+
+    [Fact]
+    public void UpdateDraft_rejects_an_empty_payload_and_keeps_the_draft()
+    {
+        var contract = NewContract();
+        contract.StartDraft("""{"v":1}""", _clock);
+
+        Should.Throw<DomainException>(() => contract.UpdateDraft("  ", _clock))
+            .Code.ShouldBe("contract.payload_required");
+
+        contract.DraftVersion!.PayloadJson.ShouldBe("""{"v":1}""");
+    }
+
     [Fact]
     public void Create_requires_a_project()
     {
