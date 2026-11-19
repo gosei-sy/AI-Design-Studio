@@ -13,8 +13,15 @@ All names are `snake_case` (via `EFCore.NamingConventions`). All ids are
 ## 1. Entity relationships
 
 ```
-          organizations (external identity provider — not a table in M00)
-                 │
+   auth.users ──────────────┐           (ASP.NET Core Identity, ADR-0008)
+        │                   │
+        │  FK               │ FK
+        ▼                   ▼
+   auth.organization_memberships ──► auth.organizations
+        roles: Member | Approver (flags)      │
+        one ACTIVE row per user               │
+                                              │  (by id only — no FK)
+                 ┌────────────────────────────┘
                  ▼
           ┌──────────────┐
           │   projects    │  kind: NewProduct | Redesign (immutable)
@@ -46,6 +53,26 @@ Cross-module links are plain `uuid` columns with **no foreign key**. That is
 deliberate: a database-level FK between modules would be a dependency the
 architecture tests forbid at the code level, and would block extracting a module
 later. Referential integrity across modules is an application invariant.
+
+**The two foreign keys in the diagram are the exception, and both live inside the
+`auth` schema** — membership → organization and membership → user. They exist
+because a membership row is a grant of access: one pointing at a user id that was
+never issued would hand organization access to whoever received that id later, and
+one pointing at a nonexistent organization is unresolvable. Neither crosses a
+module boundary (organizations and memberships are one module), and neither is the
+kind of convenience FK the rule above is about.
+
+`app.projects.organization_id` has **no** FK to `auth.organizations`, following the
+cross-module rule. What protects that column is the query filter in §9a, not
+referential integrity.
+
+**One further exception, narrowly approved.** The five composite tenant-ownership
+foreign keys in §10b cross from the DesignContracts, DesignSystems, Screens,
+Redesign and Assets modules into Projects. They were approved by the Product
+Owner on 2026-11-05 **for that purpose and no other** (ADR-0009 A3.1): tenant
+isolation is a security invariant, and module extractability is a hypothetical
+future convenience. This is **not** permission for arbitrary cross-module foreign
+keys.
 
 ---
 
@@ -343,19 +370,258 @@ sequential and makes `ORDER BY id` approximate creation order.
 
 ## 10. Conventions
 
-| Convention                           | Rationale                                                                          |
-| :----------------------------------- | :--------------------------------------------------------------------------------- |
-| `snake_case` names                   | PostgreSQL idiom; avoids quoting every identifier                                  |
-| Enums as `varchar`                   | Legible in SQL; reordering an enum cannot change stored meaning                    |
-| `timestamptz` everywhere             | No naive local times                                                               |
-| `jsonb` for documents                | Queryable and indexable, unlike text                                               |
-| Owned collections for versions       | Versions are part of their aggregate; independent mutation would bypass invariants |
-| No FK across modules                 | Preserves module boundaries and future extraction                                  |
-| Filtered unique indexes for approval | The only mechanism that holds under concurrency                                    |
+| Convention                                 | Rationale                                                                                                                         |
+| :----------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------- |
+| `snake_case` names                         | PostgreSQL idiom; avoids quoting every identifier                                                                                 |
+| Enums as `varchar`                         | Legible in SQL; reordering an enum cannot change stored meaning                                                                   |
+| `timestamptz` everywhere                   | No naive local times                                                                                                              |
+| `jsonb` for documents                      | Queryable and indexable, unlike text                                                                                              |
+| Owned collections for versions             | Versions are part of their aggregate; independent mutation would bypass invariants                                                |
+| No FK across modules, bar tenant ownership | Preserves module boundaries and future extraction. The only approved exception is the five composite keys in §10b (ADR-0009 A3.1) |
+| Filtered unique indexes for approval       | The only mechanism that holds under concurrency                                                                                   |
+| Query filter on every `organization_id`    | Tenant isolation as a model property, so one missing `WHERE` cannot leak                                                          |
+
+## 9a. Organization scoping — tenant isolation is a model property
+
+Every entity carrying an `organization_id` has a **global EF Core query filter**:
+
+```csharp
+e.HasQueryFilter(x => IsSystemScope || x.OrganizationId == ScopedOrganizationId);
+```
+
+**All seven tenant-owned aggregate roots have one:** `DesignProject`,
+`DesignContract`, `DesignSystem`, `Screen`, `FeatureInventory`,
+`AssetReference`, `JobRecord`. The scope comes from `IOrganizationScope`,
+resolved per request from the caller's membership and from nothing the caller
+sends (ADR-0009).
+
+**Why contracts, design systems, screens and inventories carry
+`organization_id` even though they also carry `project_id`.** Tenancy is
+transitive — they belong to a project, which belongs to an organization — and a
+transitive key cannot be a global filter without a correlated subquery on every
+read of every table. Carrying the key directly keeps one uniform rule. W3-001
+established this: the first implementation filtered only the three roots that
+already had the column, leaving the other four readable by primary key across
+tenants (ADR-0009 A1).
+
+**Denormalizing creates a second ownership assertion, and the database makes the
+two agree.** The claim that the values "cannot drift" was true of mutation — a
+project's organization is immutable — and **false of creation**: nothing stopped
+an inconsistent pair being written, and the re-review proved PostgreSQL accepted
+organization A's key on organization B's project (W3-RR-001). A query filter
+cannot repair contradictory ownership data after it is written. See §10b.
+
+Three states, and the default is the closed one:
+
+| Scope            | Rows visible             | Who gets it                                                   |
+| :--------------- | :----------------------- | :------------------------------------------------------------ |
+| **None**         | none                     | the default — any context built without a scope               |
+| **Organization** | that organization's only | an HTTP request with a resolved membership                    |
+| **System**       | all                      | the job worker and `aids-provision`, by explicit registration |
+
+Two things to know before writing a query:
+
+1. **A forgotten authorization check produces an empty result set, not a
+   cross-tenant read.** That is the whole point of defaulting to None.
+2. **Raw SQL is not filtered.** The job claim statement
+   (`FOR UPDATE SKIP LOCKED`) is raw ADO and sees every tenant's queue — correct
+   for a dispatcher, and it means the filter is not what protects that path.
+   Running only in the worker is.
+
+`auth.organization_memberships` is deliberately **not** filtered: it is what
+produces the scope, so filtering it would be circular. Every query against it
+carries its own organization predicate.
+
+`OrganizationScopeGuardTests` **partitions the whole EF model** rather than
+discovering a subset: every entity type must be filtered, owned by something
+filtered, or on a by-value exemption list with a stated reason. Being
+unclassified is itself a failure, so a table added in a later milestone cannot be
+missed. That shape is the W3-001 correction — the previous guard chose its own
+population by looking for an `organization_id` property, so it could only ever
+confirm the author's model of what existed.
+
+## 10b. Tenant ownership is referential, not only filtered
+
+`app.projects` exposes **`(organization_id, id)`** as an alternate key
+(`ak_projects_organization_id_id`). Every project-owned root references that
+pair:
+
+| Table                     | Constraint                              |
+| :------------------------ | :-------------------------------------- |
+| `app.design_contracts`    | `fk_design_contracts_project_tenant`    |
+| `app.design_systems`      | `fk_design_systems_project_tenant`      |
+| `app.screens`             | `fk_screens_project_tenant`             |
+| `app.feature_inventories` | `fk_feature_inventories_project_tenant` |
+| `app.assets`              | `fk_assets_project_tenant`              |
+
+Each is `(organization_id, project_id) → projects (organization_id, id)` with
+`ON DELETE RESTRICT`: no delete path exists yet, and a future one should decide
+what happens to children rather than inherit a silent cascade.
+
+**What this stops.** A row claiming one organization while sitting on another's
+project. Before the constraint PostgreSQL accepted exactly that, and the query
+filter then served the row to the wrong tenant (W3-RR-001). It is reproduced
+permanently by
+`MigrationUpgradeTests.A_mismatched_tenant_and_project_is_accepted_before_the_constraint_and_refused_after`,
+which asserts the insert succeeds before the migration and is refused after it.
+
+**Index consequences.** The alternate key's unique index leads with
+`organization_id`, so it subsumes the old `ix_projects_organization_id`, which was
+dropped. Each foreign key brings its own `(organization_id, project_id)` index,
+which likewise subsumes the standalone `organization_id` index on those four
+tables — also dropped. `app.jobs` keeps its own, having no project.
+
+**The application side.** The aggregates take a single `ProjectOwnership` value
+rather than two loose `Guid`s, so `DesignContract.Create(project.Ownership,
+clock)` cannot pair a project with a foreign organization. That is a shape which
+makes the mistake conspicuous; the guarantee is the constraint.
+
+**The upgrade.** The migration resolves a mismatched row to its project's
+organization — the project is the authoritative owner, so the value is knowable —
+and **fails** on an orphaned `project_id`, because nothing can determine the right
+tenant and deleting a tenant's row is not a migration's decision.
+
+## 10a. `auth.organizations` and `auth.organization_memberships`
+
+### `auth.organizations`
+
+| Column       | Type           | Notes                                |
+| :----------- | :------------- | :----------------------------------- |
+| `id`         | `uuid`         | PK, UUID v7 from the domain          |
+| `name`       | `varchar(200)` | **unique** (`ux_organizations_name`) |
+| `created_at` | `timestamptz`  |                                      |
+| `updated_at` | `timestamptz`  | nullable                             |
+
+The name is unique because operator provisioning selects an organization by it,
+and an ambiguous `--organization Acme` would mean the operator does not know
+which tenant they just granted access to.
+
+### `auth.organization_memberships`
+
+| Column             | Type           | Notes                                              |
+| :----------------- | :------------- | :------------------------------------------------- |
+| `id`               | `uuid`         | PK                                                 |
+| `organization_id`  | `uuid`         | FK → `auth.organizations` (`RESTRICT`)             |
+| `user_id`          | `uuid`         | FK → `auth.users` (`CASCADE`)                      |
+| `roles`            | `integer`      | flags: `Member = 1`, `Approver = 2`                |
+| `status`           | `varchar(32)`  | `Active` or `Revoked`                              |
+| `provisioned_by`   | `varchar(256)` | **required** — who first granted access            |
+| `roles_changed_by` | `varchar(256)` | nullable — who **last changed the roles** (W3-002) |
+| `roles_changed_at` | `timestamptz`  | nullable                                           |
+| `revoked_at`       | `timestamptz`  | nullable                                           |
+| `revoked_by`       | `varchar(256)` | nullable                                           |
+| `created_at`       | `timestamptz`  |                                                    |
+
+**Constraints, and what each one stops:**
+
+| Constraint                                                                                | Stops                                                                                        |
+| :---------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |
+| `ux_organization_memberships_active_user` — unique on `user_id` where `status = 'Active'` | A second active membership. The MVP's one-organization-per-user rule, held under concurrency |
+| `ck_organization_memberships_roles` — `roles > 0 AND roles <= 3`                          | A membership with no roles, or a role this build does not define                             |
+| `ck_organization_memberships_status`                                                      | Any status but `Active` or `Revoked`                                                         |
+| `ck_organization_memberships_revoked_audit`                                               | A revocation with no record of who or when                                                   |
+| `ck_organization_memberships_active_audit`                                                | An active row claiming it was revoked                                                        |
+| `ck_organization_memberships_role_change_audit`                                           | A role change recording a time but no actor, or the reverse                                  |
+| `ck_organization_membership_events_type`                                                  | An audit entry with an unknown event type                                                    |
+| `fk_organization_memberships_user`                                                        | A grant of access to a user id that does not exist                                           |
+| `fk_organization_memberships_organization`                                                | A grant of access to an organization that does not exist                                     |
+
+`roles` is an **integer flags column**, breaking this schema's "enums as
+`varchar`" convention. A flags value has no single valid string form
+("Member, Approver" would have to be parsed), and the integer is what lets "at
+least one role" and "no unknown roles" be check constraints rather than prose.
+
+Revoked rows are kept rather than deleted: they are the record of who had access
+and who withdrew it. The filtered index constrains active rows only, so a user
+may accumulate any amount of history.
+
+`roles_changed_by` does **not** overwrite `provisioned_by`: "who first granted
+this person access" and "who last changed what they may do" are different
+questions, and a promotion that replaced the first answer would destroy it
+(W3-002, ADR-0009 A2).
+
+### `auth.organization_membership_events` — the append-only audit chain
+
+| Column            | Type           | Notes                                                           |
+| :---------------- | :------------- | :-------------------------------------------------------------- |
+| `id`              | `uuid`         | PK                                                              |
+| `membership_id`   | `uuid`         | FK → `auth.organization_memberships` (owned)                    |
+| `organization_id` | `uuid`         | denormalized, so an entry is self-contained                     |
+| `user_id`         | `uuid`         | denormalized, same reason                                       |
+| `type`            | `varchar(32)`  | `Provisioned`, `RolesChanged`, `Revoked` or `MigrationBaseline` |
+| `previous_roles`  | `integer`      | nullable — null for `Provisioned`                               |
+| `new_roles`       | `integer`      | nullable — null for `Revoked`                                   |
+| `actor`           | `varchar(256)` | **required** for every entry                                    |
+| `occurred_at`     | `timestamptz`  |                                                                 |
+
+An **owned collection** of the membership, so the aggregate writes an entry in
+the same `SaveChanges` as the change it records — "a role changed and nothing
+recorded it" is not a reachable state. Deliberately **not** `AutoInclude`d: the
+authorization path reads a membership on every request and never needs its
+history, and loading the chain each time would make the hottest query in the
+application grow without bound.
+
+**The limit, stated:** append-only by construction of the aggregate, not by
+database privilege. A writer with table rights could still delete a row, which is
+why S-22 remains partial.
+
+### `MigrationBaseline` — what the upgrade observed
+
+Memberships that predate the event table receive one entry of type
+`MigrationBaseline`, written **only by the upgrade migration** (W3-RR-002,
+ADR-0009 A3.2). It records an observation, not a reconstructed grant:
+
+| Field            | Value                     | Why                                        |
+| :--------------- | :------------------------ | :----------------------------------------- |
+| `actor`          | `system:migration/<name>` | The migration observed it, not an operator |
+| `occurred_at`    | migration time            | When it was observed                       |
+| `previous_roles` | **NULL**                  | Not recoverable                            |
+| `new_roles`      | the role set as found     | The only observable fact                   |
+
+`provisioned_by` and `created_at` stay on the membership row as the separately
+recorded original attribution; they are deliberately **not** folded into the
+event, because that would assert the person held _these_ roles at _that_ time —
+unknowable for any membership whose roles changed before the upgrade.
+
+A **revoked** legacy membership also gets a reconstructed `Revoked` entry from
+its recorded `revoked_by` / `revoked_at` / role set.
+
+**Two things to know when reading a chain:**
+
+- **It is not chronological across the upgrade boundary.** A reconstructed
+  `Revoked` entry carries its real timestamp, which precedes the baseline's
+  migration-time stamp.
+- **A `Revoked` entry on a membership that also has a `MigrationBaseline` was
+  reconstructed**, not observed.
+
+**"Predates the event table" means "has no audit events at all"** — not "has no
+baseline yet" (W3-RR2-001, ADR-0009 A4.1). Migration 5 created the event table,
+so a deployment running at migration 5 writes genuine `Provisioned` entries; the
+first predicate baselined those too, labelling an observed chain as
+reconstructed. A membership with any event does not predate the chain.
+
+The reconstruction of a revocation is guarded **per event type and** conditioned
+on a baseline existing, so a membership revoked through the aggregate is excluded
+twice over. A single "any event exists" guard across both inserts would have
+written the baseline and then suppressed the revocation.
+
+**Rollback** (ADR-0009 A4.2). Reversing the migration deletes the baselines and
+the reconstructed revocations it wrote — in that order, since a reconstruction is
+identifiable only while its baseline exists — and **keeps observed events**, which
+predate it. It does **not** restore a tenant key the migration repaired: that
+value was wrong, and putting it back is the one thing a rollback should refuse.
+Without the deletion the old event-type constraint came back while baseline rows
+were present, failing every downgrade with `23514`.
+
+Both statement sets live in `MembershipAuditBaselineSql` so the idempotency test
+runs exactly what the migration runs. That file must never be edited: an applied
+migration has to keep meaning what it meant when it was applied.
 
 ## 11. Not yet modelled
 
-- `organizations` / `users` — awaiting the authorization decision (M01).
+- A second active organization membership per user — one active membership is the
+  MVP rule (ADR-0009). The table shape already allows several; relaxing it means
+  dropping `ux_organization_memberships_active_user`.
 - Review comments and annotations (M02).
 - Handoff artifacts and export manifests (M03).
 - Job retention and archival (M02). Dead jobs currently accumulate.

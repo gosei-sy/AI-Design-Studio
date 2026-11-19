@@ -43,6 +43,24 @@ public sealed class Screen : AggregateRoot
 
     private Screen() { } // EF Core
 
+    /// <summary>
+    /// The owning organization. **Denormalized from the project on purpose**
+    /// (W3-001).
+    ///
+    /// <para>Tenancy is transitive — this aggregate belongs to a project, and the
+    /// project belongs to an organization — but a transitive key cannot be a
+    /// global query filter without a correlated subquery on every read of every
+    /// table. Carrying the tenant key directly is what makes the filter uniform
+    /// across the model, and it follows the shape <c>AssetReference</c> and
+    /// <c>JobRecord</c> have had since M00: both store <c>OrganizationId</c>
+    /// alongside <c>ProjectId</c>.</para>
+    ///
+    /// <para>Safe to denormalize because a project's organization is immutable —
+    /// <c>DesignProject</c> exposes no way to move one between tenants — so the
+    /// two values cannot drift.</para>
+    /// </summary>
+    public Guid OrganizationId { get; private set; }
+
     public Guid ProjectId { get; private set; }
     public string Key { get; private set; } = string.Empty;
     public string Title { get; private set; } = string.Empty;
@@ -53,8 +71,17 @@ public sealed class Screen : AggregateRoot
     public ScreenVersion? ApprovedVersion =>
         _versions.SingleOrDefault(v => v.ReviewState == ReviewState.Approved);
 
-    public static Screen Create(Guid projectId, string key, string title, IClock clock)
+    public static Screen Create(
+        ProjectOwnership owner, string key, string title, IClock clock)
     {
+        var (organizationId, projectId) = (owner.OrganizationId, owner.ProjectId);
+
+        if (organizationId == Guid.Empty)
+        {
+            throw new DomainException(
+                "screen.organization_required", "A screen must belong to an organization.");
+        }
+
         if (projectId == Guid.Empty)
         {
             throw new DomainException("screen.project_required", "A screen must belong to a project.");
@@ -67,6 +94,7 @@ public sealed class Screen : AggregateRoot
 
         return new Screen
         {
+            OrganizationId = organizationId,
             ProjectId = projectId,
             Key = key.Trim(),
             Title = string.IsNullOrWhiteSpace(title) ? key.Trim() : title.Trim(),

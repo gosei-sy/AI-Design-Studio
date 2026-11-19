@@ -43,25 +43,32 @@ test.describe("system status page", () => {
     if (await alert.isVisible()) {
       await expect(alert).toContainText(/Could not reach the API|API/i);
     } else {
+      // Health is anonymous, so a reachable API must produce a real verdict
+      // here even though the provider section needs a session. Those two
+      // requests are deliberately independent (M01-W2-RR-004).
       await expect(apiSection).toContainText(/Healthy|Degraded|Unhealthy/);
     }
   });
 
-  test("lists provider capabilities when the API is reachable", async ({ page }) => {
+  /**
+   * Provider status needs a session since M01-02 (S-19). An anonymous visitor
+   * must see a deliberate "sign in" state — not raw 401 problem JSON, and not an
+   * error that would mask a genuine outage.
+   *
+   * M01-W2-RR-004: this spec used to skip itself whenever an alert appeared,
+   * which meant it stopped asserting anything the moment the endpoint became
+   * protected.
+   */
+  test("asks an anonymous visitor to sign in before showing provider status", async ({ page }) => {
     await page.goto("/");
-
-    const alert = statusAlert(page);
-
-    if (await alert.isVisible().catch(() => false)) {
-      test.skip(true, "API not reachable; provider listing cannot be asserted.");
-    }
 
     const providers = page.getByRole("region", { name: "AI providers" });
     await expect(providers).toBeVisible();
-    await expect(providers).toContainText("google-stitch");
+    await expect(providers).toContainText(/Sign in to view provider status/i);
 
-    // The UI must present capabilities as discovered data, never assume them.
-    await expect(providers).toContainText("Capabilities:");
+    // Whatever it shows, it must not be a raw problem document.
+    await expect(providers).not.toContainText("application/problem");
+    await expect(providers).not.toContainText('"status": 401');
   });
 
   test("never renders a credential value", async ({ page }) => {

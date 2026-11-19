@@ -5,7 +5,14 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables(prefix: "AIDS_");
 
-builder.Services.AddInfrastructure(builder.Configuration);
+// System-scoped, explicitly (ADR-0009). The worker dispatches jobs for every
+// tenant, so an organization-scoped context would see an empty queue — and a
+// worker that silently processed nothing is exactly the kind of failure that
+// takes a week to notice. There is no HTTP request here to resolve a membership
+// from, which is why the elevation is safe: it is a property of the process, not
+// of anything a caller can send.
+builder.Services.AddInfrastructure(builder.Configuration, OrganizationScoping.System);
+
 builder.Services.Configure<JobDispatcherOptions>(
     builder.Configuration.GetSection(JobDispatcherOptions.SectionName));
 

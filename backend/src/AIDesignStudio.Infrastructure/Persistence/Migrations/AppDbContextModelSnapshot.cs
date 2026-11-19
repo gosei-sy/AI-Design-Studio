@@ -103,6 +103,10 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_id");
@@ -117,6 +121,9 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProjectId")
                         .IsUnique()
                         .HasDatabaseName("ix_design_contracts_project_id");
+
+                    b.HasIndex("OrganizationId", "ProjectId")
+                        .HasDatabaseName("ix_design_contracts_organization_id_project_id");
 
                     b.ToTable("design_contracts", "app");
                 });
@@ -137,6 +144,10 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_id");
@@ -151,6 +162,9 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProjectId")
                         .IsUnique()
                         .HasDatabaseName("ix_design_systems_project_id");
+
+                    b.HasIndex("OrganizationId", "ProjectId")
+                        .HasDatabaseName("ix_design_systems_organization_id_project_id");
 
                     b.ToTable("design_systems", "app");
                 });
@@ -242,6 +256,117 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.ToTable("jobs", "app");
                 });
 
+            modelBuilder.Entity("AIDesignStudio.Domain.Organizations.Organization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organizations");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_organizations_name");
+
+                    b.ToTable("organizations", "auth");
+                });
+
+            modelBuilder.Entity("AIDesignStudio.Domain.Organizations.OrganizationMembership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("ProvisionedBy")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("provisioned_by");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("RevokedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("revoked_by");
+
+                    b.Property<int>("Roles")
+                        .HasColumnType("integer")
+                        .HasColumnName("roles");
+
+                    b.Property<DateTimeOffset?>("RolesChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("roles_changed_at");
+
+                    b.Property<string>("RolesChangedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("roles_changed_by");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organization_memberships");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_organization_memberships_active_user")
+                        .HasFilter("status = 'Active'");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_organization_memberships_organization_id_status");
+
+                    b.ToTable("organization_memberships", "auth", t =>
+                        {
+                            t.HasCheckConstraint("ck_organization_memberships_active_audit", "status <> 'Active' OR (revoked_at IS NULL AND revoked_by IS NULL)");
+
+                            t.HasCheckConstraint("ck_organization_memberships_revoked_audit", "status <> 'Revoked' OR (revoked_at IS NOT NULL AND revoked_by IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_organization_memberships_role_change_audit", "(roles_changed_at IS NULL) = (roles_changed_by IS NULL)");
+
+                            t.HasCheckConstraint("ck_organization_memberships_roles", "roles > 0 AND roles <= 3");
+
+                            t.HasCheckConstraint("ck_organization_memberships_status", "status IN ('Active', 'Revoked')");
+                        });
+                });
+
             modelBuilder.Entity("AIDesignStudio.Domain.Projects.DesignProject", b =>
                 {
                     b.Property<Guid>("Id")
@@ -275,8 +400,8 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_projects");
 
-                    b.HasIndex("OrganizationId")
-                        .HasDatabaseName("ix_projects_organization_id");
+                    b.HasAlternateKey("OrganizationId", "Id")
+                        .HasName("ak_projects_organization_id_id");
 
                     b.ToTable("projects", "app", t =>
                         {
@@ -294,6 +419,10 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_id");
@@ -308,6 +437,9 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProjectId")
                         .IsUnique()
                         .HasDatabaseName("ix_feature_inventories_project_id");
+
+                    b.HasIndex("OrganizationId", "ProjectId")
+                        .HasDatabaseName("ix_feature_inventories_organization_id_project_id");
 
                     b.ToTable("feature_inventories", "app");
                 });
@@ -328,6 +460,10 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("key");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_id");
@@ -345,6 +481,9 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_screens");
 
+                    b.HasIndex("OrganizationId", "ProjectId")
+                        .HasDatabaseName("ix_screens_organization_id_project_id");
+
                     b.HasIndex("ProjectId", "Key")
                         .IsUnique()
                         .HasDatabaseName("ix_screens_project_id_key");
@@ -352,8 +491,293 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.ToTable("screens", "app");
                 });
 
+            modelBuilder.Entity("AIDesignStudio.Infrastructure.Identity.ApplicationRole", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text")
+                        .HasColumnName("concurrency_stamp");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_roles");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex");
+
+                    b.ToTable("roles", "auth");
+                });
+
+            modelBuilder.Entity("AIDesignStudio.Infrastructure.Identity.ApplicationUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("access_failed_count");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text")
+                        .HasColumnName("concurrency_stamp");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("email_confirmed");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("lockout_enabled");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lockout_end");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_email");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_user_name");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text")
+                        .HasColumnName("phone_number");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("phone_number_confirmed");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text")
+                        .HasColumnName("security_stamp");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("two_factor_enabled");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex");
+
+                    b.ToTable("users", "auth");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text")
+                        .HasColumnName("friendly_name");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text")
+                        .HasColumnName("xml");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_protection_keys");
+
+                    b.ToTable("data_protection_keys", "auth");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_type");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_value");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_role_claims");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_role_claims_role_id");
+
+                    b.ToTable("role_claims", "auth");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_type");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_value");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_claims");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_claims_user_id");
+
+                    b.ToTable("user_claims", "auth");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text")
+                        .HasColumnName("login_provider");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("text")
+                        .HasColumnName("provider_key");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("text")
+                        .HasColumnName("provider_display_name");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("LoginProvider", "ProviderKey")
+                        .HasName("pk_user_logins");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_logins_user_id");
+
+                    b.ToTable("user_logins", "auth");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.HasKey("UserId", "RoleId")
+                        .HasName("pk_user_roles");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_user_roles_role_id");
+
+                    b.ToTable("user_roles", "auth");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text")
+                        .HasColumnName("login_provider");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text")
+                        .HasColumnName("value");
+
+                    b.HasKey("UserId", "LoginProvider", "Name")
+                        .HasName("pk_user_tokens");
+
+                    b.ToTable("user_tokens", "auth");
+                });
+
+            modelBuilder.Entity("AIDesignStudio.Domain.Assets.AssetReference", b =>
+                {
+                    b.HasOne("AIDesignStudio.Domain.Projects.DesignProject", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProjectId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_assets_project_tenant");
+                });
+
             modelBuilder.Entity("AIDesignStudio.Domain.DesignContracts.DesignContract", b =>
                 {
+                    b.HasOne("AIDesignStudio.Domain.Projects.DesignProject", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProjectId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_design_contracts_project_tenant");
+
                     b.OwnsMany("AIDesignStudio.Domain.DesignContracts.DesignContractVersion", "Versions", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -421,6 +845,14 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("AIDesignStudio.Domain.DesignSystems.DesignSystem", b =>
                 {
+                    b.HasOne("AIDesignStudio.Domain.Projects.DesignProject", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProjectId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_design_systems_project_tenant");
+
                     b.OwnsMany("AIDesignStudio.Domain.DesignSystems.DesignSystemVersion", "Versions", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -486,8 +918,99 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                     b.Navigation("Versions");
                 });
 
+            modelBuilder.Entity("AIDesignStudio.Domain.Organizations.OrganizationMembership", b =>
+                {
+                    b.HasOne("AIDesignStudio.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_memberships_organization");
+
+                    b.HasOne("AIDesignStudio.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_memberships_user");
+
+                    b.OwnsMany("AIDesignStudio.Domain.Organizations.OrganizationMembershipEvent", "Events", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Actor")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("character varying(256)")
+                                .HasColumnName("actor");
+
+                            b1.Property<Guid>("MembershipId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("membership_id");
+
+                            b1.Property<int?>("NewRoles")
+                                .HasColumnType("integer")
+                                .HasColumnName("new_roles");
+
+                            b1.Property<DateTimeOffset>("OccurredAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("occurred_at");
+
+                            b1.Property<Guid>("OrganizationId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("organization_id");
+
+                            b1.Property<int?>("PreviousRoles")
+                                .HasColumnType("integer")
+                                .HasColumnName("previous_roles");
+
+                            b1.Property<string>("Type")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("character varying(32)")
+                                .HasColumnName("type");
+
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("user_id");
+
+                            b1.HasKey("Id")
+                                .HasName("pk_organization_membership_events");
+
+                            b1.HasIndex("UserId")
+                                .HasDatabaseName("ix_organization_membership_events_user_id");
+
+                            b1.HasIndex("MembershipId", "OccurredAt")
+                                .HasDatabaseName("ix_organization_membership_events_membership_id_occurred_at");
+
+                            b1.HasIndex("OrganizationId", "OccurredAt")
+                                .HasDatabaseName("ix_organization_membership_events_organization_id_occurred_at");
+
+                            b1.ToTable("organization_membership_events", "auth", t =>
+                                {
+                                    t.HasCheckConstraint("ck_organization_membership_events_type", "type IN ('Provisioned', 'RolesChanged', 'Revoked', 'MigrationBaseline')");
+                                });
+
+                            b1.WithOwner()
+                                .HasForeignKey("MembershipId")
+                                .HasConstraintName("fk_organization_membership_events_organization_memberships_mem");
+                        });
+
+                    b.Navigation("Events");
+                });
+
             modelBuilder.Entity("AIDesignStudio.Domain.Redesign.FeatureInventory", b =>
                 {
+                    b.HasOne("AIDesignStudio.Domain.Projects.DesignProject", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProjectId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_feature_inventories_project_tenant");
+
                     b.OwnsMany("AIDesignStudio.Domain.Redesign.FeatureInventoryItem", "Items", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -550,6 +1073,14 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("AIDesignStudio.Domain.Screens.Screen", b =>
                 {
+                    b.HasOne("AIDesignStudio.Domain.Projects.DesignProject", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId", "ProjectId")
+                        .HasPrincipalKey("OrganizationId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_screens_project_tenant");
+
                     b.OwnsMany("AIDesignStudio.Domain.Screens.ScreenVersion", "Versions", b1 =>
                         {
                             b1.Property<Guid>("Id")
@@ -643,6 +1174,63 @@ namespace AIDesignStudio.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.HasOne("AIDesignStudio.Infrastructure.Identity.ApplicationRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_claims_roles_role_id");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.HasOne("AIDesignStudio.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_claims_users_user_id");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
+                {
+                    b.HasOne("AIDesignStudio.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_logins_users_user_id");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.HasOne("AIDesignStudio.Infrastructure.Identity.ApplicationRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_roles_roles_role_id");
+
+                    b.HasOne("AIDesignStudio.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_roles_users_user_id");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
+                {
+                    b.HasOne("AIDesignStudio.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_tokens_users_user_id");
                 });
 #pragma warning restore 612, 618
         }

@@ -82,7 +82,7 @@ Run these and report their **actual** output.
 ```bash
 # Backend
 dotnet build                         # warnings are errors
-dotnet test                                    # 258 tests
+dotnet test                                    # 477 tests
 dotnet format --verify-no-changes
 
 # Frontend and shared contracts
@@ -100,7 +100,7 @@ dotnet-ef migrations has-pending-model-changes \
 
 Integration tests need PostgreSQL on `localhost:5432`, or
 `AIDS_TEST_CONNECTION` pointing elsewhere. Without it those tests **skip with a
-reason** rather than failing — if you see skips, say so; do not report 258 passed
+reason** rather than failing — if you see skips, say so; do not report 477 passed
 when 57 skipped.
 
 ---
@@ -117,11 +117,11 @@ when 57 skipped.
 
 ### Known environment gaps
 
-| Gap                         | Consequence                                                                  |
-| :-------------------------- | :--------------------------------------------------------------------------- |
-| Docker may be unavailable   | `docker-compose.yml` is **unverified**. Install PostgreSQL natively instead. |
-| No Stitch credentials       | Live generation unverifiable. See SPIKE-02 for the test plan.                |
-| Playwright E2E not executed | Config and specs exist but are **unverified**. Needs both services running.  |
+| Gap                                | Consequence                                                                                                 |
+| :--------------------------------- | :---------------------------------------------------------------------------------------------------------- |
+| Docker may be unavailable          | `docker-compose.yml` is **unverified**. Install PostgreSQL natively instead.                                |
+| No Stitch credentials              | Live generation unverifiable. See SPIKE-02 for the test plan.                                               |
+| Playwright E2E needs both services | **7/7 pass locally** (M01-11); the CI run is still outstanding. Needs the API and the HTTPS studio running. |
 
 Report a gap; do not paper over it.
 

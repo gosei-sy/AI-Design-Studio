@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AIDesignStudio.Application\AIDesignStudio.Application.csproj" />
     <ProjectReference Include="..\..\src\AIDesignStudio.Infrastructure\AIDesignStudio.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\AIDesignStudio.Provisioning\AIDesignStudio.Provisioning.csproj" />
     <ProjectReference Include="..\..\src\AIDesignStudio.Worker\AIDesignStudio.Worker.csproj" />
   </ItemGroup>
 

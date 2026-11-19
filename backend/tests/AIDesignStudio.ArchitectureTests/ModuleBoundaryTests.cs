@@ -34,6 +34,12 @@ public sealed class ModuleBoundaryTests
     private const string ApiNs = "AIDesignStudio.Api";
     private const string WorkerNs = "AIDesignStudio.Worker";
 
+    // The operator provisioning tool is a host like the others, and nothing
+    // inward may depend on it. Added when M01-03 introduced it (ADR-0009):
+    // omitting it from these lists would have left a new executable free to be
+    // referenced from the domain.
+    private const string ProvisioningNs = "AIDesignStudio.Provisioning";
+
     private static void ShouldHaveNoViolations(NetArchTest.Rules.TestResult result)
     {
         var failing = result.FailingTypeNames ?? [];
@@ -48,21 +54,23 @@ public sealed class ModuleBoundaryTests
     public void SharedKernel_depends_on_nothing_else_in_the_solution() =>
         ShouldHaveNoViolations(Types.InAssembly(SharedKernel)
             .ShouldNot()
-            .HaveDependencyOnAny(DomainNs, ApplicationNs, InfrastructureNs, ApiNs, WorkerNs)
+            .HaveDependencyOnAny(
+                DomainNs, ApplicationNs, InfrastructureNs, ApiNs, WorkerNs, ProvisioningNs)
             .GetResult());
 
     [Fact]
     public void Domain_does_not_depend_on_outer_layers() =>
         ShouldHaveNoViolations(Types.InAssembly(Domain)
             .ShouldNot()
-            .HaveDependencyOnAny(ApplicationNs, InfrastructureNs, ApiNs, WorkerNs)
+            .HaveDependencyOnAny(
+                ApplicationNs, InfrastructureNs, ApiNs, WorkerNs, ProvisioningNs)
             .GetResult());
 
     [Fact]
     public void Application_does_not_depend_on_infrastructure_or_hosts() =>
         ShouldHaveNoViolations(Types.InAssembly(Application)
             .ShouldNot()
-            .HaveDependencyOnAny(InfrastructureNs, ApiNs, WorkerNs)
+            .HaveDependencyOnAny(InfrastructureNs, ApiNs, WorkerNs, ProvisioningNs)
             .GetResult());
 
     // -----------------------------------------------------------------------
@@ -182,7 +190,11 @@ public sealed class ModuleBoundaryTests
     [Fact]
     public void Domain_modules_do_not_reference_each_others_types()
     {
-        string[] modules = ["Projects", "DesignContracts", "DesignSystems", "Screens", "Redesign", "Assets", "Jobs"];
+        string[] modules =
+        [
+            "Projects", "DesignContracts", "DesignSystems", "Screens", "Redesign", "Assets", "Jobs",
+            "Organizations",
+        ];
         var violations = new List<string>();
 
         foreach (var module in modules)
@@ -254,16 +266,16 @@ public sealed class ModuleBoundaryTests
         var clock = new SystemClock();
 
         // One populated instance per aggregate that owns a collection.
-        var contract = DesignContract.Create(Guid.CreateVersion7(), clock);
+        var contract = DesignContract.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), clock);
         contract.StartDraft("""{"v":1}""", clock);
 
-        var designSystem = DesignSystem.Create(Guid.CreateVersion7(), "Acme", clock);
+        var designSystem = DesignSystem.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "Acme", clock);
         designSystem.StartDraft("""{"v":1}""", clock);
 
-        var screen = Screen.Create(Guid.CreateVersion7(), "home", "Home", clock);
+        var screen = Screen.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "home", "Home", clock);
         screen.AddVersion(ScreenOrigin.Authored, Guid.CreateVersion7(), "hash", null, null, clock);
 
-        var inventory = FeatureInventory.Create(Guid.CreateVersion7(), clock);
+        var inventory = FeatureInventory.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), clock);
         var item = inventory.AddItem("export-csv", "Export CSV", clock);
         item.MarkCovered([Guid.CreateVersion7()]);
 

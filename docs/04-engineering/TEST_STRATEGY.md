@@ -7,17 +7,43 @@ have an automated test. An invariant without a test is not implemented.
 
 ## 1. Current state
 
-| Suite                              |   Tests | Needs      | Runtime   |
-| :--------------------------------- | ------: | :--------- | :-------- |
-| `AIDesignStudio.UnitTests`         |     185 | nothing    | ~5 s      |
-| `AIDesignStudio.ArchitectureTests` |      16 | nothing    | ~4 s      |
-| `AIDesignStudio.IntegrationTests`  |      57 | PostgreSQL | ~14 s     |
-| `frontend` (Vitest)                |      14 | nothing    | ~10 s     |
-| `packages/contracts` (Vitest)      |     164 | nothing    | ~5 s      |
-| **Total**                          | **436** |            | **~33 s** |
+| Suite                              |   Tests | Needs      | Runtime    |
+| :--------------------------------- | ------: | :--------- | :--------- |
+| `AIDesignStudio.UnitTests`         |     262 | nothing    | ~7 s       |
+| `AIDesignStudio.ArchitectureTests` |      25 | nothing    | ~7 s       |
+| `AIDesignStudio.IntegrationTests`  |     190 | PostgreSQL | ~95 s      |
+| `frontend` (Vitest)                |      14 | nothing    | ~43 s      |
+| `packages/contracts` (Vitest)      |     164 | nothing    | ~6 s       |
+| **Total**                          | **655** |            | **~2 min** |
 
-The whole suite runs in about half a minute. That is deliberate: a suite slow
-enough to skip gets skipped.
+Measured on 2026-11-05, after the M01 Wave 3 **re-review round 2** corrections.
+The backend suite is `477` of that total (`dotnet test`), and the frontend `178`
+(`npm test`).
+
+**`MigrationUpgradeTests` is a shape this suite did not have before.** It starts
+at a _named prior migration_, seeds the rows a real deployment would already
+hold, then migrates forward — and in one case back again. Every Wave 3 finding
+that survived the normal suite was invisible for one structural reason: the
+fixture migrates to latest before any test runs, and the aggregates only ever
+build internally consistent data. **A suite that can only create new data can
+only verify new data.** Each of those tests provisions and drops its own
+database.
+
+Two further lessons from re-review round 2 are encoded there:
+
+- **Migrating an already-current database proves nothing.** EF skips an applied
+  migration, so an idempotency assertion written that way executes no SQL at all.
+  The backfill statements live in `MembershipAuditBaselineSql` precisely so a
+  test can run _them_ twice, and it asserts counts per membership and per type —
+  a global total can hide one row appearing while another disappears.
+- **The upgrade _window_ is a third state, not a midpoint.** A database at
+  migration 5 already has the event table and is writing real audit entries; a
+  test that seeds after the latest migration never visits that state, which is
+  how a baseline came to be written over memberships that had observed history.
+
+The suite is no longer the half-minute it was at M00: M01-03's integration tests
+each boot a host and provision through the real service, which is what makes them
+worth having and also what makes them cost a second each.
 
 Every figure on this page is a **discovered** count, taken from the runners
 rather than by counting `[Fact]` attributes — a `[Theory]` contributes one
@@ -98,6 +124,26 @@ What needs a real database and why:
 | `jsonb` queryability    | The `->>` operator                                 |
 | Migrations applying     | There is nothing to migrate in-memory              |
 
+### End-to-end tests — the browser boundary
+
+Seven Playwright specs, run against both real services with the studio over
+HTTPS proxying the API. Three drive the full authentication flow: antiforgery
+token, registration, login, **the session cookie actually landing in the
+browser's jar** with `HttpOnly`/`Secure`/`SameSite=Strict`, an authenticated
+call, logout, and antiforgery rejection.
+
+They exist because M01-02 twice shipped an auth API that worked in `TestServer`
+and failed in a browser. In-process tests do not enforce `Secure`, do not apply
+schemeful `SameSite`, and have no cookie jar that can refuse. **Counted
+separately from the 655** — they need two running processes, so they are not part
+of `dotnet test` or `npm test`.
+
+**M01-03 added no E2E spec.** Its guarantees are status codes, visible rows and
+refused writes, all of which the integration suite asserts against the real host;
+a browser adds nothing to any of them. The one browser-only property in this area
+— that the session cookie is actually accepted by a cookie jar — was already
+covered by `auth.spec.ts` in M01-02.
+
 ### Frontend tests
 
 `api.test.ts` (8) covers request shaping, error classification, the
@@ -125,16 +171,21 @@ rule per property.
 run; removing one from TypeScript fails `tsc` with
 `Type 'true' is not assignable to type 'never'`.
 
-### End-to-end — ⚠ unverified
+### End-to-end — ✅ executed locally, CI run outstanding
 
-`frontend/e2e/status.spec.ts`, 4 Playwright specs. **Not executed.**
+**7 Playwright specs, 7 passing**, run against both real services with the studio
+over HTTPS proxying the API. `frontend/e2e/status.spec.ts` (4) and
+`frontend/e2e/auth.spec.ts` (3).
 
-The blocker is the **Playwright Chromium binary**, which is not installed. An
-earlier version of this document attributed it to being unable to start the
-Node server; the independent review disproved that by starting the production
-server and confirming the specs are discovered. CI installs the browser
-(`npx playwright install --with-deps chromium`). Stated plainly rather than
-counted as coverage.
+**Historical note.** Through M00 this section read "⚠ unverified — 4 specs, not
+executed", because the Chromium binary was absent. M01-11 installed the build
+matching the lockfile and the suite has run since; see the § above for why the
+browser specs exist at all. The browser install must use the **workspace**
+Playwright binary, not `npx`, or it fetches a build the test run cannot find.
+
+**Still outstanding for M01-11 acceptance:** the **CI** run. Passing locally is
+not the acceptance criterion, and the specs are counted separately from the 655
+because they need two running processes.
 
 ---
 
@@ -155,11 +206,13 @@ Assert.SkipUnless(fixture.IsAvailable, fixture.SkipReason);
 
 With the reason naming the host, port and the variable to set. A developer
 without PostgreSQL gets **201** passing tests and a clear instruction, rather
-than 57 confusing connection errors.
+than 122 confusing connection errors.
 
-**Reporting rule:** if tests skip, say so. "258 passed" when 57 skipped is a
-false report — the backend total is 258 only when PostgreSQL is reachable, and
-any report of it must state the skip count.
+**Reporting rule:** if tests skip, say so. "339 passed" when 122 skipped is a
+false report — the backend total is 339 only when PostgreSQL is reachable, and
+any report of it must state the skip count. This has bitten twice during M01:
+PostgreSQL stopped between runs and a suite reported every integration test as
+skipped.
 
 ### Why Shouldly, not FluentAssertions
 
@@ -292,7 +345,7 @@ Stated rather than implied.
 
 ```bash
 # Everything
-dotnet test                                    # 258
+dotnet test                                    # 339
 npm test                                       # 14 + 164
 
 # One suite
@@ -308,7 +361,7 @@ dotnet test -p:TestingPlatformShowTestsFailure=true
 # SQL for a persistence failure
 AIDS_TEST_SQL_LOG=1 dotnet test --project backend/tests/AIDesignStudio.IntegrationTests/...
 
-# E2E — needs the API running first; unverified
+# E2E — 7/7 locally. Needs the API running; Playwright starts the HTTPS studio.
 dotnet run --project backend/src/AIDesignStudio.Api &
 npm run test:e2e --workspace frontend
 ```

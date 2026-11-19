@@ -14,17 +14,23 @@ public static class HealthEndpoints
         {
             Predicate = check => check.Tags.Contains("live"),
             ResponseWriter = WriteResponse,
-        }).WithTags("Health");
+        }).WithTags("Health").AllowAnonymous();
 
         // Readiness: can the process serve traffic? Includes the database.
         app.MapHealthChecks("/health/ready", new HealthCheckOptions
         {
             Predicate = check => check.Tags.Contains("ready"),
             ResponseWriter = WriteResponse,
-        }).WithTags("Health");
+        }).WithTags("Health").AllowAnonymous();
 
+        // These three are the only non-auth endpoints that stay anonymous.
+        // Orchestrators probe them without credentials, and S-19 scopes the
+        // authentication requirement to "all non-health endpoints" for exactly
+        // that reason. Each opts out explicitly, because the host's fallback
+        // policy requires an authenticated user by default.
         app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
             .WithTags("Health")
+            .AllowAnonymous()
             .WithSummary("Minimal unauthenticated health probe.");
     }
 

@@ -204,12 +204,19 @@ jobs:
       - name: Build frontend
         run: npm run build
         env:
-          NEXT_PUBLIC_API_BASE_URL: http://localhost:5080
+          # Empty: the browser calls the studio's own origin and the studio
+          # proxies /api/* server-side. An absolute URL here is what broke the
+          # browser session path (M01-W2-006, M01-W2-RR-003).
+          NEXT_PUBLIC_API_BASE_URL: ""
 
       - name: Run end-to-end tests
         run: npm run test:e2e --workspace frontend
         env:
-          NEXT_PUBLIC_API_BASE_URL: http://localhost:5080
+          NEXT_PUBLIC_API_BASE_URL: ""
+          # Where the studio's server-side proxy reaches the API. Must match the
+          # ASPNETCORE_URLS above; a mismatch here would fail only in CI
+          # (M01-W2-R3).
+          API_ORIGIN: http://localhost:5080
 
       - uses: actions/upload-artifact@v5
         if: failure()

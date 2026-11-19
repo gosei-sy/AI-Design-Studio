@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { SystemStatusPanel, type SystemStatus } from "@/components/system-status";
-import { getProviderReadiness, getReadiness, listProviders } from "@/lib/api";
+import { ApiError, getProviderReadiness, getReadiness, listProviders } from "@/lib/api";
 
 /**
  * Collects status, degrading rather than throwing.
@@ -10,16 +10,42 @@ import { getProviderReadiness, getReadiness, listProviders } from "@/lib/api";
  * not migrated), so it is rendered as a message instead of a Next.js error page.
  */
 async function loadStatus(): Promise<SystemStatus> {
+  // Health is anonymous; the provider list is not (S-19, since M01-02). These
+  // are fetched independently so one cannot mask the other.
+  //
+  // M01-W2-RR-004: they used to share a Promise.all, so once providers became
+  // authenticated the 401 took the health result down with it and the page
+  // rendered raw problem JSON. An unauthenticated visitor still deserves to see
+  // whether the API and database are up.
+  let readiness: SystemStatus["readiness"];
+  let error: string | undefined;
+
   try {
-    const [readiness, providers] = await Promise.all([getReadiness(), listProviders()]);
+    readiness = await getReadiness();
+  } catch (cause) {
+    error = cause instanceof Error ? cause.message : String(cause);
+  }
+
+  try {
+    const providers = await listProviders();
 
     const providerReadiness = await Promise.all(
       providers.map((p) => getProviderReadiness(p.providerId)),
     );
 
-    return { readiness, providers, providerReadiness };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) };
+    return { readiness, providers, providerReadiness, error };
+  } catch (cause) {
+    // A 401 is the expected state for an anonymous visitor, not a fault. It is
+    // reported as "sign in to view" rather than as an error, because calling it
+    // an error would be untrue and would hide a real outage behind noise.
+    if (cause instanceof ApiError && cause.status === 401) {
+      return { readiness, providersRequireAuth: true, error };
+    }
+
+    return {
+      readiness,
+      error: error ?? (cause instanceof Error ? cause.message : String(cause)),
+    };
   }
 }
 

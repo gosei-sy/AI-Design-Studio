@@ -145,19 +145,119 @@ trigger generation can spend the account's money.
 
 ---
 
-## 5. Authentication and authorization — **absent in M00**
+## 5. Authentication and authorization — absent in M00, built in M01
 
-| #    | Requirement                                      | Status                           |
-| :--- | :----------------------------------------------- | :------------------------------- |
-| S-19 | Authentication on all non-health endpoints       | **NOT IMPLEMENTED — M01**        |
-| S-20 | Organization-scoped authorization on every query | **NOT IMPLEMENTED — M01**        |
-| S-21 | Approval actions attributable to a real identity | **NOT IMPLEMENTED — M01**        |
-| S-22 | Audit trail for approvals and waivers            | Partial — metadata on aggregates |
+| #    | Requirement                                      | Status                                                                                                |
+| :--- | :----------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| S-19 | Authentication on all non-health endpoints       | **Met and verified** — M01-02                                                                         |
+| S-20 | Organization-scoped authorization on every query | **Implemented in M01-03; Wave 3 review corrections applied, awaiting re-review** — see below          |
+| S-21 | Approval actions attributable to a real identity | **Met for provisioned accounts** — immutable user id, identity asserted by an operator (D-9 resolved) |
+| S-22 | Audit trail for approvals and waivers            | Partial — metadata on aggregates                                                                      |
 
-**Stated plainly: no endpoint is authenticated in M00.** The two implemented
-endpoint groups are health and read-only provider diagnostics, neither of which
-exposes project data — but the API must not be exposed to an untrusted network
-before M01.
+**M01-02 implemented authentication** (decision D-7 / Option A; see
+[ADR-0008](../02-architecture/decisions/ADR-0008-authentication-is-local-identity-with-cookie-sessions.md)).
+ASP.NET Core Identity on the existing PostgreSQL database, with an HttpOnly
+`SameSite=Strict` cookie session. The browser receives no readable credential of
+any kind.
+
+The session is **same-origin because the studio proxies the API**: the browser
+talks only to the frontend origin, which forwards `/api/*` server-side. That is
+load-bearing rather than cosmetic — `SameSite` is compared schemefully, so a
+browser on a different origin or scheme never sends the cookie, which is how the
+documented setup path failed twice (M01-W2-006, M01-W2-RR-003). Verified in real
+Chromium by `frontend/e2e/auth.spec.ts`.
+
+The host applies a **fallback authorization policy** requiring an authenticated
+user, so an endpoint is protected unless it explicitly opts out. Five do: the
+three health probes, the antiforgery-token endpoint, and the unauthenticated auth
+endpoints. A new endpoint added in a later task is closed by default.
+
+What Option A obliges us to own, all implemented in M01-02:
+
+| Obligation           | Implementation                                                                              |
+| :------------------- | :------------------------------------------------------------------------------------------ |
+| Password policy      | 12 chars, mixed case, digit, non-alphanumeric                                               |
+| Lockout              | 5 failures → 15 minutes, **enabled for new users**                                          |
+| Password change      | Rotates the security stamp and re-issues the caller's session                               |
+| Password recovery    | Token via `IPasswordResetNotifier`; **never** in a response body                            |
+| MFA policy           | TOTP enrol / enable-on-proof / disable-on-proof; failed second factors count toward lockout |
+| Antiforgery          | Explicit endpoint filter on every state-changing endpoint                                   |
+| Data Protection keys | Persisted to PostgreSQL, so sessions survive restart and scale-out                          |
+
+**M01-03 implemented organization-scoped authorization** (decisions D-3 and D-9;
+see
+[ADR-0009](../02-architecture/decisions/ADR-0009-account-proofing-is-trusted-operator-provisioning.md)).
+It is **implemented and awaiting independent re-acceptance, not accepted** — this
+section describes what the code does, not a milestone verdict. Two review rounds
+found two generations of the same mistake, and both are corrected:
+
+- **W3-001** — the tenant filter covered only the three roots carrying
+  `OrganizationId` directly, leaving contracts, design systems, screens and
+  inventories unfiltered. All seven now carry the key and are filtered.
+- **W3-RR-001** — denormalizing that key created a _second_ ownership assertion
+  with nothing making the two agree, and PostgreSQL accepted one organization's
+  key on another organization's project. Five composite foreign keys now refuse
+  it (ADR-0009 A3.1).
+
+| Control                                   | Mechanism                                                                                                                                                                        |
+| :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Membership and roles                      | `auth.organization_memberships`; `Member` and `Approver`, scoped to one organization                                                                                             |
+| Where the current organization comes from | A membership read keyed on the authenticated user id. No header, query string, route value, body field or role claim                                                             |
+| Which rows exist per request              | A global EF query filter on all seven tenant roots, defaulting to **none** — plus a composite foreign key so a row's tenant key cannot disagree with its project (ADR-0009 A3.1) |
+| Approve / reject / waive                  | The `organization.approver` policy and `OrganizationAccess.RequireApprover()`                                                                                                    |
+| Cross-tenant reads                        | `404`, never `403` — a `403` would be a tenant-existence oracle                                                                                                                  |
+| Granting access                           | `aids-provision` only. No HTTP route in any environment; public registration is unmapped outside Development                                                                     |
+
+**Roles here are not ASP.NET Core Identity roles.** Identity roles live in
+`auth.user_roles` and are global, so a row there named `Approver` would make
+someone an approver of every tenant. Nothing in the authorization path reads a
+role claim, and
+`AuthorizationTests.A_global_identity_role_named_Approver_grants_nothing` assigns
+a real global `Approver` role to a Member and asserts the Approver-only endpoint
+still returns `403`.
+
+**Two things remain deliberately not done, and are not claimed:**
+
+- **No email transport exists (D-8).** `RequireConfirmedEmail` is therefore
+  `false` — with no sender, requiring confirmation would lock everyone out.
+  Recovery token _generation_ works; _delivery_ does not. **Production refuses to
+  start** without a configured transport, so the gap cannot reach users silently.
+  Since **2026-11-02 this is the approved pre-production gate** (ADR-0008 A2,
+  Proposal 2 Option 2): **no Production deployment may proceed until D-8 is
+  resolved.** Token logging in Development is opt-in and off by default, because a
+  reset token is a credential.
+- **Data Protection keys have no protector configured (D-5).** Persisting keys
+  explicitly disables automatic encryption at rest, so Production **refuses to
+  start** until a certificate, Key Vault or approved equivalent is configured.
+  Development warns.
+
+**On S-21 — now met for the accounts that can act, and the reason matters.** The
+audit subject is the **immutable user id**, reached through
+`ICurrentUser.RequireAuditIdentity()`, which throws rather than substituting a
+placeholder. It was originally the email address, which the Wave 2 review
+correctly rejected (W2-005): an address is self-asserted, so anyone could
+register someone else's and be recorded as that person in every future approval.
+
+Using the id made attribution **stable**. **D-9, resolved by ADR-0009, is what
+makes the identity asserted:** only an account provisioned by a trusted operator
+holds any role, and the membership row records which operator asserted that the
+person was verified out of band. A self-registered account has no membership and
+no role, so it can approve nothing and there is nothing of consequence to
+attribute to it.
+
+Two limits, stated rather than glossed:
+
+- **The system records who asserted the identity; it cannot check that they
+  did.** Proofing is moved out of the software and made auditable, not
+  established by it. That is the accepted cost in ADR-0009.
+- **Email addresses are still unconfirmed** (D-8), so an address remains display
+  metadata and never an identity. Nothing authorizes on it.
+
+Separately, the recovery obligation is **not met**: token generation works, but
+delivery needs a mail transport (**D-8**), and Production refuses to start
+without one — the approved fail-closed pre-production gate (ADR-0008 A2). The
+obligation is open regardless of M01-02's acceptance status; the gate changed
+_when_ it must be met, not _whether_.
 
 The data model is ready: `OrganizationId` exists and is indexed on projects,
 assets and jobs — `ix_jobs_organization_id` was added during the review
@@ -165,7 +265,17 @@ corrections, having been claimed here before it existed. Job idempotency is
 organization-scoped, storage keys are organization-prefixed, and `ApprovedBy` and
 `WaivedBy` are non-null where a decision is recorded.
 
-Blocked on assumption A-01 (whether the four roles reflect real team structure).
+Assumption A-01 is **resolved** (D-3, 2026-10-21): two roles, Member and
+Approver. Both are implemented in M01-03 as organization-scoped roles.
+
+**Operational consequence of D-9 plus D-8, together.** Outside Development there
+is no public registration and no password-reset delivery, so a provisioned user's
+first password is set by the operator and communicated out of band, and there is
+no self-service recovery in a deployed environment. A second follows from
+ADR-0008 A2's fail-closed gate: because the host refuses to start in Production
+without a reset transport, **`aids-provision` cannot run in Production either** —
+it starts the same host, so it cannot provision into a deployment the API would
+refuse to serve. Both are arguments for resolving D-8 early.
 
 ---
 
@@ -175,7 +285,7 @@ Blocked on assumption A-01 (whether the four roles reflect real team structure).
 | :--- | :--------------------------------------------------- | :------------------------------------- |
 | S-23 | HTTPS in deployed environments                       | Deployment concern — **M02**           |
 | S-24 | CORS restricted to known origins                     | **Met** — allow-list, no wildcard      |
-| S-25 | Security headers (CSP, HSTS, X-Content-Type-Options) | **M01**                                |
+| S-25 | Security headers (CSP, HSTS, X-Content-Type-Options) | **Met and verified** — M01-02          |
 | S-26 | No secret in a `NEXT_PUBLIC_` variable               | **Met** — documented in `.env.example` |
 
 `NEXT_PUBLIC_API_BASE_URL` is the only `NEXT_PUBLIC_` variable, and

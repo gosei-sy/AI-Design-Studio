@@ -13,7 +13,7 @@ public sealed class FeatureInventoryTests
 {
     private readonly TestClock _clock = new();
 
-    private FeatureInventory NewInventory() => FeatureInventory.Create(Guid.CreateVersion7(), _clock);
+    private FeatureInventory NewInventory() => FeatureInventory.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), _clock);
 
     [Fact]
     public void A_newly_catalogued_feature_starts_unaddressed_and_blocks_handoff()

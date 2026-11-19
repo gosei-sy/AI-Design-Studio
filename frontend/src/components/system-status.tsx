@@ -9,6 +9,15 @@ export interface SystemStatus {
   readiness?: HealthReport;
   providers?: ProviderSummary[];
   providerReadiness?: ProviderReadiness[];
+
+  /**
+   * The provider list needs a session (S-19, since M01-02) and this visitor has
+   * none. A distinct state rather than an error, because "sign in to see this"
+   * is a correct answer and calling it a failure would hide real outages in
+   * noise (M01-W2-RR-004).
+   */
+  providersRequireAuth?: boolean;
+
   error?: string;
 }
 
@@ -34,6 +43,7 @@ export function SystemStatusPanel({
   providers,
   providerReadiness,
   error,
+  providersRequireAuth,
 }: SystemStatus) {
   return (
     <div className="space-y-8">
@@ -103,6 +113,10 @@ export function SystemStatusPanel({
               );
             })}
           </ul>
+        ) : providersRequireAuth ? (
+          <p role="status" className="text-muted-foreground text-sm">
+            Sign in to view provider status.
+          </p>
         ) : (
           <p className="text-muted-foreground text-sm">No provider adapters reported.</p>
         )}

@@ -1,3 +1,5 @@
+using AIDesignStudio.Application.Organizations;
+using AIDesignStudio.Infrastructure.Organizations;
 using AIDesignStudio.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -42,8 +44,7 @@ public sealed class DatabaseFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var adminConnectionString =
-            Environment.GetEnvironmentVariable(EnvVariable) ?? DefaultAdminConnection;
+        var adminConnectionString = AdminConnectionString;
 
         var builder = new NpgsqlConnectionStringBuilder(adminConnectionString);
 
@@ -71,6 +72,60 @@ public sealed class DatabaseFixture : IAsyncLifetime
 
         IsAvailable = true;
     }
+
+    /// <summary>
+    /// Provisions an extra disposable database, for tests that manipulate schema
+    /// state and must not touch the shared one.
+    ///
+    /// <para>Added for the upgrade-path tests (W3-RR-001, W3-RR-002): both
+    /// findings were only reachable by starting at an *older* migration, which
+    /// the shared fixture cannot do because it migrates to latest on
+    /// initialisation.</para>
+    /// </summary>
+    public async Task<string> CreateDatabaseAsync(string purpose, CancellationToken cancellationToken)
+    {
+        var name = $"aids_{purpose}_{Guid.CreateVersion7():N}";
+        var builder = new NpgsqlConnectionStringBuilder(AdminConnectionString);
+
+        await using var admin = new NpgsqlConnection(AdminConnectionString);
+        await admin.OpenAsync(cancellationToken);
+
+        await using var create = new NpgsqlCommand($"""CREATE DATABASE "{name}" """, admin);
+        await create.ExecuteNonQueryAsync(cancellationToken);
+
+        builder.Database = name;
+
+        return builder.ConnectionString;
+    }
+
+    /// <summary>
+    /// Drops a database created by <see cref="CreateDatabaseAsync"/>. Never
+    /// throws: a leaked test database is noise, a failed teardown is a red suite.
+    /// </summary>
+    public async Task DropDatabaseAsync(string connectionString)
+    {
+        NpgsqlConnection.ClearAllPools();
+
+        var name = new NpgsqlConnectionStringBuilder(connectionString).Database;
+        var admin = new NpgsqlConnectionStringBuilder(AdminConnectionString).ConnectionString;
+
+        try
+        {
+            await using var connection = new NpgsqlConnection(admin);
+            await connection.OpenAsync();
+
+            await using var drop = new NpgsqlCommand(
+                $"""DROP DATABASE IF EXISTS "{name}" WITH (FORCE)""", connection);
+            await drop.ExecuteNonQueryAsync();
+        }
+        catch
+        {
+            // Deliberately swallowed.
+        }
+    }
+
+    private static string AdminConnectionString =>
+        Environment.GetEnvironmentVariable(EnvVariable) ?? DefaultAdminConnection;
 
     public async ValueTask DisposeAsync()
     {
@@ -106,7 +161,22 @@ public sealed class DatabaseFixture : IAsyncLifetime
     /// Optional command interceptors. Used to land deterministically inside the
     /// window between a read and its write — see <see cref="LeaseExpiryInterceptor"/>.
     /// </param>
-    public AppDbContext CreateContext(params IInterceptor[] interceptors)
+    public AppDbContext CreateContext(params IInterceptor[] interceptors) =>
+        CreateScopedContext(SystemOrganizationScope.Instance, interceptors);
+
+    /// <summary>
+    /// Builds a context with an explicit organization scope, for the tests that
+    /// exist to prove the scope works.
+    ///
+    /// <para>The default above is <b>system</b> scope, and that choice is
+    /// test-harness-only. A context built with no scope at all sees no
+    /// organization-scoped row — which is the right production default and the
+    /// wrong one for a fixture whose job is to set up and inspect arbitrary data.
+    /// Making it explicit here keeps the elevation in one visible place instead
+    /// of spreading <c>IgnoreQueryFilters()</c> through fifty assertions.</para>
+    /// </summary>
+    public AppDbContext CreateScopedContext(
+        IOrganizationScope scope, params IInterceptor[] interceptors)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(ConnectionString, npgsql => npgsql
@@ -126,7 +196,7 @@ public sealed class DatabaseFixture : IAsyncLifetime
                 .EnableSensitiveDataLogging();
         }
 
-        return new AppDbContext(options.Options);
+        return new AppDbContext(options.Options, scope);
     }
 }
 

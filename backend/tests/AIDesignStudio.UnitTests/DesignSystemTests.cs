@@ -37,7 +37,7 @@ public sealed class DesignSystemTests
         """;
 
     private DesignSystem NewSystem() =>
-        DesignSystem.Create(Guid.CreateVersion7(), "Acme Design System", _clock);
+        DesignSystem.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "Acme Design System", _clock);
 
     // -----------------------------------------------------------------------
     // Creation
@@ -46,21 +46,21 @@ public sealed class DesignSystemTests
     [Fact]
     public void Create_requires_a_project()
     {
-        Should.Throw<DomainException>(() => DesignSystem.Create(Guid.Empty, "Acme", _clock))
+        Should.Throw<DomainException>(() => DesignSystem.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.Empty), "Acme", _clock))
             .Code.ShouldBe("design_system.project_required");
     }
 
     [Fact]
     public void Create_requires_a_name()
     {
-        Should.Throw<DomainException>(() => DesignSystem.Create(Guid.CreateVersion7(), "  ", _clock))
+        Should.Throw<DomainException>(() => DesignSystem.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "  ", _clock))
             .Code.ShouldBe("design_system.name_required");
     }
 
     [Fact]
     public void Create_trims_the_name()
     {
-        DesignSystem.Create(Guid.CreateVersion7(), "  Acme  ", _clock).Name.ShouldBe("Acme");
+        DesignSystem.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "  Acme  ", _clock).Name.ShouldBe("Acme");
     }
 
     // -----------------------------------------------------------------------

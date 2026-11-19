@@ -80,6 +80,16 @@ public sealed class JobDispatcherTests(DatabaseFixture fixture)
         services.AddDbContext<Infrastructure.Persistence.AppDbContext>(options => options
             .UseNpgsql(fixture.ConnectionString)
             .UseSnakeCaseNamingConvention());
+
+        // System-scoped, exactly as the real worker is
+        // (AddInfrastructure(OrganizationScoping.System), ADR-0009). Without
+        // this the context defaults to the closed scope, the organization query
+        // filter on jobs matches nothing, and the dispatcher waits forever for a
+        // queue it cannot see — which is how these two tests failed when the
+        // filter was introduced. The failure mode is worth remembering: a
+        // forgotten scope makes a worker silently idle, not loud.
+        services.AddSingleton<Application.Organizations.IOrganizationScope>(
+            Infrastructure.Organizations.SystemOrganizationScope.Instance);
         services.AddScoped<IJobQueue, PostgresJobQueue>();
         services.AddSingleton(NullLoggerFactory.Instance);
         services.AddLogging();

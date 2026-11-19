@@ -17,7 +17,7 @@ public sealed class ScreenApprovalTests
     private const string ContractHash = "abc123";
 
     private Screen NewScreen() =>
-        Screen.Create(Guid.CreateVersion7(), "/checkout", "Checkout", _clock);
+        Screen.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "/checkout", "Checkout", _clock);
 
     private ScreenVersion AddVersion(Screen screen, Guid? contractVersionId = null, string? hash = null) =>
         screen.AddVersion(
@@ -31,14 +31,14 @@ public sealed class ScreenApprovalTests
     [Fact]
     public void Create_requires_a_stable_key()
     {
-        Should.Throw<DomainException>(() => Screen.Create(Guid.CreateVersion7(), "  ", "T", _clock))
+        Should.Throw<DomainException>(() => Screen.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "  ", "T", _clock))
             .Code.ShouldBe("screen.key_required");
     }
 
     [Fact]
     public void Create_defaults_the_title_to_the_key()
     {
-        Screen.Create(Guid.CreateVersion7(), "/checkout", "  ", _clock).Title.ShouldBe("/checkout");
+        Screen.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), "/checkout", "  ", _clock).Title.ShouldBe("/checkout");
     }
 
     [Fact]

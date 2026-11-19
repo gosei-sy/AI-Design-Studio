@@ -1,15 +1,37 @@
 import type { HealthReport, ProviderReadiness, ProviderSummary } from "@aids/contracts";
 
 /**
- * Base URL of the ASP.NET Core API.
+ * Base URL of the API, as the browser sees it.
  *
- * Read from the environment rather than hardcoded so the same build runs
- * against local, preview and production APIs. NEXT_PUBLIC_ is required because
- * client components read it.
+ * **Empty by default, and that is the point.** Requests go to this origin and
+ * `next.config.ts` proxies `/api/*` to the real API server-side, so the session
+ * cookie is same-origin. Pointing the browser at the API's own origin is what
+ * broke the documented browser path twice: `SameSite` is compared *schemefully*,
+ * so an HTTP page and an HTTPS API are different sites and a `SameSite=Strict`
+ * cookie is never sent (M01-W2-006, M01-W2-RR-003).
+ *
+ * Override only to talk to a genuinely remote API, which then needs its own CORS
+ * allow-list and `credentials` handling — see ADR-0008.
  */
-export const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5080"
-).replace(/\/+$/, "");
+export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/+$/, "");
+
+/**
+ * Where **server-side** rendering reaches the API.
+ *
+ * A server component cannot fetch a relative URL — there is no document origin
+ * to resolve it against — so the browser's proxied path and the server's path
+ * cannot be the same string. The server talks to the API directly over loopback;
+ * only the browser goes through the BFF proxy, which is the hop that needs to be
+ * same-origin for the session cookie.
+ *
+ * Mixing these up is what made the status page report "no provider adapters"
+ * instead of "sign in": the server-side fetch failed outright rather than
+ * receiving the 401 it was supposed to interpret.
+ */
+const SERVER_API_ORIGIN = (process.env.API_ORIGIN ?? "http://localhost:5080").replace(/\/+$/, "");
+
+/** The base for this execution context: proxy path in the browser, origin on the server. */
+const baseFor = (): string => (typeof window === "undefined" ? SERVER_API_ORIGIN : API_BASE_URL);
 
 /**
  * Raised when the API responds but not successfully. Carries the status so
@@ -55,10 +77,16 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(`${baseFor()}${path}`, {
       headers: { Accept: "application/json" },
       cache: options.cache ?? "no-store",
       signal: options.signal,
+
+      // Same-origin by default (the proxy in next.config.ts), so "same-origin"
+      // is the accurate value. Kept explicit rather than relying on the default
+      // because the whole class of bug here was the session cookie silently not
+      // being attached.
+      credentials: "same-origin",
     });
   } catch (cause) {
     throw new ApiUnreachableError(path, cause);

@@ -10,7 +10,7 @@ the screens this app will contain.
 ## Commands
 
 ```bash
-npm run dev --workspace frontend        # dev server → http://localhost:3000
+npm run dev:https --workspace frontend  # dev server → https://localhost:3000
 npm run build --workspace frontend      # production build
 npm test --workspace frontend           # Vitest: component + API client
 npm run typecheck --workspace frontend
@@ -19,7 +19,7 @@ npm run test:e2e --workspace frontend   # Playwright; needs the API running
 ```
 
 The API base URL comes from `NEXT_PUBLIC_API_BASE_URL`, defaulting to
-`http://localhost:5080`. Anything with a `NEXT_PUBLIC_` prefix is visible in the
+the studio's own origin, proxied server-side to the API. Anything with a `NEXT_PUBLIC_` prefix is visible in the
 browser, so never put a secret there.
 
 ## Current state (M00)
@@ -34,5 +34,5 @@ begins in M01 (see [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md)).
 src/app/            App Router pages
 src/components/     UI components (shadcn/ui primitives under ui/)
 src/lib/api.ts      typed API client
-e2e/                Playwright specs (⚠ not yet executed — see TEST_STRATEGY)
+e2e/                Playwright specs — 7/7 passing locally; CI run outstanding
 ```

@@ -1,9 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Shouldly;
 using Xunit;
 
@@ -15,41 +13,42 @@ namespace AIDesignStudio.IntegrationTests;
 /// The host is configured to point at the provisioned test database, so the
 /// readiness probe is a genuine end-to-end check: configuration, dependency
 /// injection, EF Core model building and a live connection all have to work.
+///
+/// Host construction lives in <see cref="StudioApiFactory"/>, shared with
+/// <see cref="AuthenticationTests"/> so both exercise one wiring definition.
 /// </summary>
 [Collection(DatabaseCollection.Name)]
 public sealed class ApiEndpointTests(DatabaseFixture fixture) : IAsyncLifetime
 {
-    private WebApplicationFactory<Program>? _factory;
+    private StudioApiFactory? _factory;
     private HttpClient? _client;
 
     private HttpClient Client => _client
         ?? throw new InvalidOperationException("The test host was not initialised.");
 
-    public ValueTask InitializeAsync()
+    /// <summary>
+    /// Boots the host and signs in.
+    ///
+    /// The sign-in is new in M01-02: provider diagnostics are non-health
+    /// endpoints, so S-19 now closes them and these tests would otherwise all
+    /// receive 401. Authenticating here rather than exempting the endpoints keeps
+    /// the production authorization policy under test — the 401 behaviour itself
+    /// is asserted in <see cref="AuthenticationTests"/>.
+    /// </summary>
+    public async ValueTask InitializeAsync()
     {
         if (!fixture.IsAvailable)
         {
-            return ValueTask.CompletedTask;
+            return;
         }
 
-        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("Development");
+        _factory = new StudioApiFactory(fixture.ConnectionString);
+        _client = _factory.CreateBrowserClient();
 
-            builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(
-                new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:Default"] = fixture.ConnectionString,
-
-                    // A nonexistent executable: the readiness probe must report the
-                    // provider as unavailable rather than failing the request.
-                    ["Providers:Stitch:ExecutablePath"] = "stitch-not-installed-in-test",
-                    ["Providers:Stitch:BillableOperationsEnabled"] = "false",
-                }));
-        });
-
-        _client = _factory.CreateClient();
-        return ValueTask.CompletedTask;
+        await new StudioClient(_client).SignUpAndSignInAsync(
+            $"api-tests-{Guid.CreateVersion7():N}@example.test",
+            "Correct-Horse-9-Battery!",
+            TestContext.Current.CancellationToken);
     }
 
     public async ValueTask DisposeAsync()

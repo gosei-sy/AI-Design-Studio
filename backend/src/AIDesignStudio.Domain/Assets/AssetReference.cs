@@ -45,8 +45,7 @@ public sealed class AssetReference : AggregateRoot
     public string OriginalFileName { get; private set; } = string.Empty;
 
     public static AssetReference Create(
-        Guid organizationId,
-        Guid projectId,
+        ProjectOwnership owner,
         AssetKind kind,
         string storageKey,
         string contentType,
@@ -55,6 +54,8 @@ public sealed class AssetReference : AggregateRoot
         string originalFileName,
         IClock clock)
     {
+        var (organizationId, projectId) = (owner.OrganizationId, owner.ProjectId);
+
         if (organizationId == Guid.Empty)
         {
             throw new DomainException("asset.organization_required", "An asset must belong to an organization.");

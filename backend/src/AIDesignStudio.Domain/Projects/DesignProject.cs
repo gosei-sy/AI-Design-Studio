@@ -29,6 +29,21 @@ public sealed class DesignProject : AggregateRoot
     public string Name { get; private set; } = string.Empty;
     public ProjectKind Kind { get; private set; }
 
+    /// <summary>
+    /// This project's tenancy, as the single value its children are created
+    /// from (W3-RR-001).
+    ///
+    /// <para>Every aggregate that hangs off a project takes a
+    /// <see cref="ProjectOwnership"/> rather than two loose ids, so the ordinary
+    /// way to create one — <c>Screen.Create(project.Ownership, …)</c> — cannot
+    /// pair this project with another organization. The database enforces the
+    /// same thing with <c>fk_&lt;table&gt;_project_tenant</c>; this is what makes
+    /// the correct call the convenient one.</para>
+    ///
+    /// <para>Computed, not stored. Mapped as ignored in <c>AppDbContext</c>.</para>
+    /// </summary>
+    public ProjectOwnership Ownership => ProjectOwnership.Of(OrganizationId, Id);
+
     public static DesignProject Create(Guid organizationId, string name, ProjectKind kind, IClock clock)
     {
         if (organizationId == Guid.Empty)

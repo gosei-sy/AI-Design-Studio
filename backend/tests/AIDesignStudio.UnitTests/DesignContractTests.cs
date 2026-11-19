@@ -13,7 +13,7 @@ public sealed class DesignContractTests
 {
     private readonly TestClock _clock = new();
 
-    private DesignContract NewContract() => DesignContract.Create(Guid.CreateVersion7(), _clock);
+    private DesignContract NewContract() => DesignContract.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.CreateVersion7()), _clock);
 
     [Fact]
     public void StartDraft_assigns_version_numbers_from_one_and_increments()
@@ -186,7 +186,7 @@ public sealed class DesignContractTests
     [Fact]
     public void Create_requires_a_project()
     {
-        Should.Throw<DomainException>(() => DesignContract.Create(Guid.Empty, _clock))
+        Should.Throw<DomainException>(() => DesignContract.Create(ProjectOwnership.Of(Guid.CreateVersion7(), Guid.Empty), _clock))
             .Code.ShouldBe("contract.project_required");
     }
 }

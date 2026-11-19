@@ -5,6 +5,7 @@
     <Project Path="backend/src/AIDesignStudio.Application/AIDesignStudio.Application.csproj" />
     <Project Path="backend/src/AIDesignStudio.Domain/AIDesignStudio.Domain.csproj" />
     <Project Path="backend/src/AIDesignStudio.Infrastructure/AIDesignStudio.Infrastructure.csproj" />
+    <Project Path="backend/src/AIDesignStudio.Provisioning/AIDesignStudio.Provisioning.csproj" />
     <Project Path="backend/src/AIDesignStudio.SharedKernel/AIDesignStudio.SharedKernel.csproj" />
     <Project Path="backend/src/AIDesignStudio.Worker/AIDesignStudio.Worker.csproj" />
   </Folder>

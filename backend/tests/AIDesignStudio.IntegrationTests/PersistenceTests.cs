@@ -22,12 +22,23 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 {
     private readonly IClock _clock = new SystemClock();
 
+    /// <summary>
+    /// One tenant for every aggregate these tests build.
+    ///
+    /// <para>Shared rather than per-call because W3-001 made the tenant key part
+    /// of contracts, design systems, screens and inventories too: a child created
+    /// under a different organization than its project would be a nonsense row,
+    /// and these tests assert persistence, not isolation. Isolation across two
+    /// tenants is <c>AuthorizationTests</c>'s job.</para>
+    /// </summary>
+    private static readonly Guid OrganizationId = Guid.CreateVersion7();
+
     private void RequireDatabase() => Assert.SkipUnless(fixture.IsAvailable, fixture.SkipReason);
 
     private async Task<Guid> SeedProjectAsync(ProjectKind kind = ProjectKind.NewProduct)
     {
         await using var db = fixture.CreateContext();
-        var project = DesignProject.Create(Guid.CreateVersion7(), "Integration Project", kind, _clock);
+        var project = DesignProject.Create(OrganizationId, "Integration Project", kind, _clock);
         db.Projects.Add(project);
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         return project.Id;
@@ -94,7 +105,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var contract = DesignContract.Create(projectId, _clock);
+            var contract = DesignContract.Create(ProjectOwnership.Of(OrganizationId, projectId), _clock);
             contract.StartDraft(payload, _clock);
             contract.ApproveDraft("alice@example.com", _clock);
 
@@ -124,7 +135,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var contract = DesignContract.Create(projectId, _clock);
+            var contract = DesignContract.Create(ProjectOwnership.Of(OrganizationId, projectId), _clock);
             contract.StartDraft("""{"v":1}""", _clock);
             contract.ApproveDraft("alice", _clock);
             db.DesignContracts.Add(contract);
@@ -168,7 +179,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var contract = DesignContract.Create(projectId, _clock);
+            var contract = DesignContract.Create(ProjectOwnership.Of(OrganizationId, projectId), _clock);
             contract.StartDraft("""{"v":1}""", _clock);
             contract.ApproveDraft("alice", _clock);
             db.DesignContracts.Add(contract);
@@ -257,12 +268,12 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            db.DesignContracts.Add(DesignContract.Create(projectId, _clock));
+            db.DesignContracts.Add(DesignContract.Create(ProjectOwnership.Of(OrganizationId, projectId), _clock));
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         await using var second = fixture.CreateContext();
-        second.DesignContracts.Add(DesignContract.Create(projectId, _clock));
+        second.DesignContracts.Add(DesignContract.Create(ProjectOwnership.Of(OrganizationId, projectId), _clock));
 
         var ex = await Should.ThrowAsync<DbUpdateException>(() =>
             second.SaveChangesAsync(TestContext.Current.CancellationToken));
@@ -280,12 +291,12 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            db.DesignSystems.Add(DesignSystem.Create(projectId, "Acme", _clock));
+            db.DesignSystems.Add(DesignSystem.Create(ProjectOwnership.Of(OrganizationId, projectId), "Acme", _clock));
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         await using var second = fixture.CreateContext();
-        second.DesignSystems.Add(DesignSystem.Create(projectId, "Acme Again", _clock));
+        second.DesignSystems.Add(DesignSystem.Create(ProjectOwnership.Of(OrganizationId, projectId), "Acme Again", _clock));
 
         var ex = await Should.ThrowAsync<DbUpdateException>(() =>
             second.SaveChangesAsync(TestContext.Current.CancellationToken));
@@ -313,7 +324,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var system = DesignSystem.Create(projectId, "Acme", _clock);
+            var system = DesignSystem.Create(ProjectOwnership.Of(OrganizationId, projectId), "Acme", _clock);
             system.StartDraft(tokens, _clock);
             system.ApproveDraft("alice@example.com", _clock);
 
@@ -343,7 +354,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var system = DesignSystem.Create(projectId, "Acme", _clock);
+            var system = DesignSystem.Create(ProjectOwnership.Of(OrganizationId, projectId), "Acme", _clock);
             system.StartDraft("""{"v":1}""", _clock);
             system.ApproveDraft("alice", _clock);
             db.DesignSystems.Add(system);
@@ -384,7 +395,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var system = DesignSystem.Create(projectId, "Acme", _clock);
+            var system = DesignSystem.Create(ProjectOwnership.Of(OrganizationId, projectId), "Acme", _clock);
             system.StartDraft("""{"v":1}""", _clock);
             system.ApproveDraft("alice", _clock);
             db.DesignSystems.Add(system);
@@ -428,7 +439,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var screen = Screen.Create(projectId, "/checkout", "Checkout", _clock);
+            var screen = Screen.Create(ProjectOwnership.Of(OrganizationId, projectId), "/checkout", "Checkout", _clock);
             var version = screen.AddVersion(
                 ScreenOrigin.ProviderGenerated, contractVersionId, "hash", "google-stitch", "s-1", _clock);
 
@@ -498,7 +509,7 @@ public sealed class PersistenceTests(DatabaseFixture fixture)
 
         await using (var db = fixture.CreateContext())
         {
-            var inventory = FeatureInventory.Create(projectId, _clock);
+            var inventory = FeatureInventory.Create(ProjectOwnership.Of(OrganizationId, projectId), _clock);
             inventory.AddItem("export-csv", "Export CSV", _clock).MarkCovered(screenIds);
             inventory.AddItem("legacy-fax", "Fax", _clock).Waive("Zero usage", "owner@example.com");
 

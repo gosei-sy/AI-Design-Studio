@@ -7,15 +7,19 @@ consistently using AI tools such as Google Stitch.
 source of truth — not the output of any individual AI provider.
 
 **Status:** M00 (foundation) ✅ **complete** — independently re-accepted
-(APPROVED, 2026-10-21) after four correction rounds. **M01 is in progress**,
-authorized 2026-10-21, currently Wave 1.
+(APPROVED, 2026-10-21). **M01 is in progress.** **M01-02 (authentication) was
+independently accepted on 2026-11-03** — APPROVED with non-blocking findings:
+password-reset delivery (**D-8**) is unresolved and is a fail-closed
+pre-production gate, and MFA recovery codes remain a recorded gap. **M01-03
+(organization-scoped authorization) is implemented; three independent review
+rounds returned CHANGES REQUIRED and all nine findings are corrected, so it
+awaits independent re-acceptance** — it is not accepted yet.
 
 There is no product UI yet; the single page reports environment status. The
-Playwright E2E suite now runs — 4/4 specs pass against a reachable API (M01-11).
-`docker-compose.yml` remains **unverified** because Docker is not installed here
-(M01-12). See
-[docs/05-delivery/IMPLEMENTATION_STATUS.md](docs/05-delivery/IMPLEMENTATION_STATUS.md)
-and [the Wave 1 report](docs/05-delivery/M01_WAVE1_REPORT.md).
+Playwright E2E suite runs — **7/7 specs pass** against both services, including
+the full browser auth flow. `docker-compose.yml` remains **unverified** because
+Docker is not installed here (M01-12). See
+[docs/05-delivery/IMPLEMENTATION_STATUS.md](docs/05-delivery/IMPLEMENTATION_STATUS.md).
 
 ---
 
@@ -90,33 +94,126 @@ dotnet build         # warnings are errors
 Three processes, in separate terminals:
 
 ```bash
-# API → http://localhost:5080  (Swagger at /swagger)
+# API → https://localhost:7080 and http://localhost:5080
+# Swagger at /swagger (Development only, and requires sign-in).
 dotnet run --project backend/src/AIDesignStudio.Api
 
 # Worker (job dispatcher; no handlers registered in M00)
 dotnet run --project backend/src/AIDesignStudio.Worker
 
-# Frontend → http://localhost:3000
-npm run dev
+# Studio → https://localhost:3000   ← HTTPS, and this is the only origin you open
+npm run dev:https --workspace frontend
 ```
+
+**Open the studio over HTTPS, and only the studio.** The frontend proxies
+`/api/*` and `/health*` to the API server-side (`next.config.ts`), so the
+browser talks to one origin and the session cookie is same-origin.
+
+That is not a style preference. The session cookie is `Secure` and
+`SameSite=Strict`, and `SameSite` is compared **schemefully** — an
+`http://localhost:3000` page and an `https://localhost:7080` API are _different
+sites_, so the cookie is never sent. Reviewers reproduced it twice in Chromium:
+a token was issued, registration returned `400 auth.antiforgery_failed`, and the
+cookie jar stayed empty (M01-W2-006, M01-W2-RR-003).
+
+In deployment TLS terminates at a reverse proxy in front of both, which is the
+same shape.
 
 ### 6. Verify
 
 ```bash
-curl -s localhost:5080/health                                   # {"status":"ok"}
-curl -s localhost:5080/health/ready | python3 -m json.tool       # database Healthy
-curl -s localhost:5080/api/v1/providers/ | python3 -m json.tool   # google-stitch + capabilities
-curl -s localhost:5080/api/v1/providers/google-stitch/readiness | python3 -m json.tool
+# Through the studio origin, which is how a browser reaches the API.
+# Health probes are anonymous.
+curl -sk https://localhost:3000/health                             # {"status":"ok"}
+curl -sk https://localhost:3000/health/ready | python3 -m json.tool # database Healthy
+
+# Everything else requires a session (S-19). Register, sign in keeping cookies,
+# then call it. State-changing requests need the antiforgery token echoed back.
+#
+# Registration is mapped in DEVELOPMENT ONLY (D-9, ADR-0009). Outside
+# Development the route does not exist, and accounts come from the provisioning
+# tool below. A registered account is authenticated and authorized for nothing:
+# it has no organization and no role until an operator provisions it.
+TOKEN=$(curl -sk -c jar https://localhost:3000/api/v1/auth/antiforgery-token | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])')
+curl -sk -b jar -c jar -X POST https://localhost:3000/api/v1/auth/register \
+  -H 'Content-Type: application/json' -H "X-CSRF-TOKEN: $TOKEN" \
+  -d '{"email":"you@example.test","password":"Correct-Horse-9-Battery!"}'
+curl -sk -b jar -c jar -X POST https://localhost:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' -H "X-CSRF-TOKEN: $TOKEN" \
+  -d '{"email":"you@example.test","password":"Correct-Horse-9-Battery!"}'
+curl -sk -b jar https://localhost:3000/api/v1/providers | python3 -m json.tool
+
+# Organization endpoints need a membership, which registration does not grant.
+# Before provisioning, this is a 403 with code authz.no_organization_membership:
+curl -sk -b jar https://localhost:3000/api/v1/organizations/current | python3 -m json.tool
+
+# -k because both local development certificates are self-signed.
 ```
 
-Then open <http://localhost:3000>.
+### 7. Grant yourself access — `aids-provision`
+
+A membership and its roles come **only** from the operator provisioning tool
+(D-9, [ADR-0009](docs/02-architecture/decisions/ADR-0009-account-proofing-is-trusted-operator-provisioning.md)).
+There is no HTTP route that grants access, in any environment.
+
+**Run it interactively.** It prompts for the new account's password and does not
+echo it:
+
+```bash
+export AIDS_ConnectionStrings__Default="Host=localhost;Port=5432;Database=aidesignstudio;Username=aids;Password=aids_dev_only"
+export DOTNET_ENVIRONMENT=Development
+
+# --actor is required — it records who asserts this person was verified.
+dotnet run --project backend/src/AIDesignStudio.Provisioning -- \
+  provision --email you@example.test --organization "Acme Design" \
+  --role Member --role Approver --actor "$USER@$(hostname)"
+# → Initial password for the new account (not echoed):
+
+# Withdraw it again (no password involved):
+dotnet run --project backend/src/AIDesignStudio.Provisioning -- \
+  revoke --email you@example.test --actor "$USER@$(hostname)"
+```
+
+> ### The password, and where it must not go
+>
+> **Never `echo 'secret' | aids-provision`.** W3-004: the tool refuses
+> `--password` because argv is world-readable through `/proc/<pid>/cmdline` and
+> lands in shell history — and piping a literal puts it in exactly the same two
+> places, just via the producer process instead. **Reading from stdin is only as
+> safe as whatever writes to it.**
+>
+> For automation, keep the literal out of both the command line and the history:
+>
+> ```bash
+> read -rs INITIAL_PASSWORD        # prompts, echoes nothing, not a command
+> printf '%s' "$INITIAL_PASSWORD" | dotnet run --project backend/src/AIDesignStudio.Provisioning -- \
+>   provision --email you@example.test --organization "Acme Design" \
+>   --role Member --actor "$USER@$(hostname)"
+> unset INITIAL_PASSWORD
+> ```
+>
+> `printf` is a shell builtin, so no process is created carrying the value, and
+> the history records only `"$INITIAL_PASSWORD"`. A secret file read with
+> `< /path/to/secret` is equally acceptable if the file's permissions and
+> lifetime are managed. What is never acceptable is the literal appearing in a
+> command.
+
+Then `GET /api/v1/organizations/current` returns the organization and roles, and
+`GET /api/v1/organizations/current/members` works for an Approver. Changes take
+effect on the next request — no sign-out needed.
+
+**The tool cannot run in Production today.** It starts the same host as the API,
+which refuses to start without a password-reset transport (**D-8**, ADR-0008 A2).
+That is the fail-closed gate working, not a defect.
+
+Then open <https://localhost:3000>.
 
 ---
 
 ## Tests
 
 ```bash
-dotnet test                 # 258: unit + architecture + integration
+dotnet test                 # 304: unit + architecture + integration
 npm test                    # 178: 14 frontend + 164 contract schema
 ```
 
@@ -161,11 +258,15 @@ processes:
 (cd frontend && ./node_modules/.bin/playwright install chromium)
 
 dotnet run --project backend/src/AIDesignStudio.Api &
-npm run test:e2e --workspace frontend     # 4 passed
+npm run test:e2e --workspace frontend     # 7 passed
 ```
 
-With the API down, three pass and one skips by design — the provider-listing
-spec cannot assert what it cannot reach. CI starts the API, so CI runs all four.
+Playwright starts the frontend itself over HTTPS and proxies to the API, so the
+specs exercise the real cookie policy rather than a relaxed one. Three of the
+seven drive the full browser auth flow — token issuance, registration, login,
+authenticated call, logout, and antiforgery rejection — because the previous two
+rounds both shipped an auth API that worked in `TestServer` and failed in a
+browser.
 
 ---
 

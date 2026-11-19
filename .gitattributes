@@ -1,0 +1,17 @@
+# Normalise line endings so cross-platform agents cannot produce
+# line-ending-only diffs. M01-W2-011: two .csproj files were rewritten
+# entirely as CRLF, which made `git diff --check` fail and buried the one real
+# project change in 56 lines of noise.
+* text=auto eol=lf
+
+# Binary assets must not be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
+*.tgz binary

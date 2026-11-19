@@ -1,7 +1,14 @@
 # API Contracts
 
-Base URL in development: `http://localhost:5080`.
-OpenAPI document (Development only): `GET /swagger/v1/swagger.json`.
+Base URL in development: **`https://localhost:7080`** (the `https` launch
+profile, which is the default).
+
+HTTPS is required, not preferred: the session and antiforgery cookies are
+`Secure`, so the API refuses to emit them over plain HTTP. The previously
+documented `http://localhost:5080` made every authenticated call fail with a 500
+(M01-W2-006). The HTTP endpoint still exists for health probes behind a
+TLS-terminating proxy.
+OpenAPI document (Development only, **and requires an authenticated session**): `GET /swagger/v1/swagger.json`. It was anonymous until M01-W2-009; the API contract is not public.
 
 Endpoints marked **(planned)** do not exist yet; their milestone is given. Only
 the endpoints under §2 and §3 are implemented in M00.
@@ -55,6 +62,15 @@ The full set currently raised, by module:
 | Code                                                                                              | Meaning                                                  |
 | :------------------------------------------------------------------------------------------------ | :------------------------------------------------------- |
 | `project.organization_required`, `project.name_required`                                          |                                                          |
+| `organization.name_required`, `organization.name_too_long`                                        |                                                          |
+| `membership.organization_required`, `membership.user_required`                                    |                                                          |
+| `membership.role_required`                                                                        | No roles, or an attempt to remove the last one           |
+| `membership.invalid_role`                                                                         | A role this application does not define                  |
+| `membership.provisioner_required`, `membership.revoker_required`                                  | An unattributed grant or withdrawal of access            |
+| `membership.revoked`, `membership.already_revoked`                                                | Illegal state transition                                 |
+| `authz.approver_required`                                                                         | Only an Approver may approve, reject or waive            |
+| `authz.no_organization_membership`                                                                | Authenticated, but provisioned by nobody                 |
+| `organization.not_found`                                                                          | Includes any organization that is not the caller's own   |
 | `project.invalid_kind`                                                                            | Kind outside `NewProduct` / `Redesign`                   |
 | `contract.project_required`, `contract.payload_required`                                          |                                                          |
 | `contract.draft_already_open`                                                                     | A draft is already open                                  |
@@ -235,6 +251,92 @@ appear here — it would reach the browser.
 `404` when `providerId` is not registered. A missing CLI is reported as data
 (`isInstalled: false`), not as a server error: an unconfigured provider is an
 expected state.
+
+---
+
+## 3a. Organizations — implemented (M01-03)
+
+Organization-scoped authorization. Every response here is computed from
+**server-side membership state**; no header, query-string parameter, request-body
+field or role claim is read (ADR-0009).
+
+### `GET /api/v1/organizations/current`
+
+The caller's organization and their roles within it.
+
+```json
+{
+  "organizationId": "01932f...",
+  "name": "Acme Design",
+  "roles": ["Member", "Approver"]
+}
+```
+
+| Status | When                                                                         |
+| :----- | :--------------------------------------------------------------------------- |
+| `200`  | The caller has an active membership                                          |
+| `401`  | No session                                                                   |
+| `403`  | Authenticated, but no active membership — `authz.no_organization_membership` |
+
+A `403` here is the normal state of a self-registered Development account.
+Registering grants nothing; access is granted by an operator (D-9).
+
+### `GET /api/v1/organizations/{organizationId}`
+
+Same body as above, for one organization by id.
+
+| Status | When                                                                            |
+| :----- | :------------------------------------------------------------------------------ |
+| `200`  | `organizationId` is the caller's own                                            |
+| `401`  | No session                                                                      |
+| `403`  | No active membership                                                            |
+| `404`  | **Any other organization**, whether or not it exists — `organization.not_found` |
+
+**`404`, not `403`, for another tenant's organization.** A `403` would confirm
+the organization exists and that the caller merely is not in it, which makes the
+endpoint a tenant-existence oracle — the same class of leak as the
+account-enumeration oracles corrected in W2-002. The response is byte-identical
+for an organization that exists and one that does not, which is asserted by
+`AuthorizationTests.An_existing_other_organization_and_a_nonexistent_one_look_the_same`.
+
+### `GET /api/v1/organizations/current/members`
+
+Active memberships of the caller's own organization. **Approver only.**
+
+```json
+{
+  "organizationId": "01932f...",
+  "members": [
+    {
+      "userId": "01932f...",
+      "roles": ["Member", "Approver"],
+      "provisionedBy": "sy.vo@example.test via aids-provision@host",
+      "provisionedAt": "2026-11-03T04:19:45.000Z"
+    }
+  ]
+}
+```
+
+| Status | When                                              |
+| :----- | :------------------------------------------------ |
+| `200`  | The caller holds `Approver`                       |
+| `401`  | No session                                        |
+| `403`  | No membership, or a membership without `Approver` |
+
+Ids and roles, **not email addresses**. An address is self-asserted (W2-005), so
+it would be misleading as an identity, and an approver does not need it to know
+who holds approval authority.
+
+### Not an endpoint: granting access
+
+There is no HTTP route that creates an organization, a membership or a role, in
+any environment. Provisioning is `aids-provision`, a console tool (ADR-0009), and
+`AuthorizationTests.No_http_endpoint_can_grant_a_membership` enumerates the real
+route table to keep it that way.
+
+`POST /api/v1/auth/register` is **mapped in Development only**. Outside
+Development the route does not exist: an anonymous call gets `401` from the
+fallback policy, and an authenticated one gets `404` from the router.
 
 ---
 

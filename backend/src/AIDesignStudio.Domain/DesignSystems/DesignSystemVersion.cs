@@ -30,6 +30,24 @@ public sealed class DesignSystem : AggregateRoot
 
     private DesignSystem() { } // EF Core
 
+    /// <summary>
+    /// The owning organization. **Denormalized from the project on purpose**
+    /// (W3-001).
+    ///
+    /// <para>Tenancy is transitive — this aggregate belongs to a project, and the
+    /// project belongs to an organization — but a transitive key cannot be a
+    /// global query filter without a correlated subquery on every read of every
+    /// table. Carrying the tenant key directly is what makes the filter uniform
+    /// across the model, and it follows the shape <c>AssetReference</c> and
+    /// <c>JobRecord</c> have had since M00: both store <c>OrganizationId</c>
+    /// alongside <c>ProjectId</c>.</para>
+    ///
+    /// <para>Safe to denormalize because a project's organization is immutable —
+    /// <c>DesignProject</c> exposes no way to move one between tenants — so the
+    /// two values cannot drift.</para>
+    /// </summary>
+    public Guid OrganizationId { get; private set; }
+
     public Guid ProjectId { get; private set; }
     public string Name { get; private set; } = string.Empty;
 
@@ -42,8 +60,16 @@ public sealed class DesignSystem : AggregateRoot
     public DesignSystemVersion? DraftVersion =>
         _versions.SingleOrDefault(v => v.Status == DesignSystemStatus.Draft);
 
-    public static DesignSystem Create(Guid projectId, string name, IClock clock)
+    public static DesignSystem Create(ProjectOwnership owner, string name, IClock clock)
     {
+        var (organizationId, projectId) = (owner.OrganizationId, owner.ProjectId);
+
+        if (organizationId == Guid.Empty)
+        {
+            throw new DomainException(
+                "design_system.organization_required", "A design system must belong to an organization.");
+        }
+
         if (projectId == Guid.Empty)
         {
             throw new DomainException("design_system.project_required", "A design system must belong to a project.");
@@ -56,6 +82,7 @@ public sealed class DesignSystem : AggregateRoot
 
         return new DesignSystem
         {
+            OrganizationId = organizationId,
             ProjectId = projectId,
             Name = name.Trim(),
             CreatedAt = clock.UtcNow,

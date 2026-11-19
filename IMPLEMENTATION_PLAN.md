@@ -11,20 +11,23 @@ M00 is closed. **M01 is in progress**, explicitly authorized by the Product Owne
 on 2026-10-21 — that authorization is what closed rule 9's start gate, not the
 M00 approval by itself.
 
-**Wave 1 is the authorized scope.** Work outside it still needs authorization.
+**Wave 3 is the authorized scope**, and within it **M01-03 only**. Wave 1 is
+complete and its corrections approved; **M01-02 was independently accepted on
+2026-11-03**. Work outside the authorized wave still needs authorization, and
+**M01-04 must not begin until M01-03 is independently accepted.**
 No task is complete until its acceptance criteria have been executed with
 evidence. Current wave state:
 
-| Task         | State                       | Gate                                                           |
-| :----------- | :-------------------------- | :------------------------------------------------------------- |
-| **M01-01**   | 🚧 Offline prep done        | Live execution blocked on **D-1/D-2**; A-08 and A-09 stay open |
-| **M01-02**   | ⏸ **Stopped at a decision** | **D-7** — authentication mechanism and identity provider, Open |
-| **M01-03**   | ⛔ Not started              | **D-3** unresolved, and M01-02 not accepted                    |
-| M01-04 … 06  | ⛔ Not started              | Each waits on its predecessor being accepted                   |
-| M01-07/08/09 | ⛔ Not started              | Gated on M01-01 resolving **A-08** positively                  |
-| M01-10       | ⛔ Not started              | Needs M01-04 … M01-09 accepted                                 |
-| **M01-11**   | ✅ **Browser unblocked**    | 4/4 specs execute and pass; acceptance needs the CI run        |
-| **M01-12**   | ⛔ **BLOCKED**              | Docker is not installed in this environment                    |
+| Task         | State                                                       | Gate                                                                                                                                                                                                                        |
+| :----------- | :---------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **M01-01**   | 🚧 Offline prep done                                        | Live execution blocked on **D-1/D-2**; A-08 and A-09 stay open                                                                                                                                                              |
+| **M01-02**   | ✅ **APPROVED with non-blocking findings**                  | Independently accepted 2026-11-03. D-8 unresolved (pre-production gate); MFA recovery codes remain a recorded gap                                                                                                           |
+| **M01-03**   | 🔬 **Round-2 corrections applied — awaiting re-acceptance** | Three review rounds, nine findings, all corrected. W3-RR-001 accepted in round 2. **D-3 and D-9 resolved** (ADR-0009, as amended by A1–A4). Evidence: [round-2 response](docs/05-delivery/reviews/M01_WAVE3_R2_RESPONSE.md) |
+| M01-04 … 06  | ⛔ Not started                                              | Each waits on its predecessor being accepted                                                                                                                                                                                |
+| M01-07/08/09 | ⛔ Not started                                              | Gated on M01-01 resolving **A-08** positively                                                                                                                                                                               |
+| M01-10       | ⛔ Not started                                              | Needs M01-04 … M01-09 accepted                                                                                                                                                                                              |
+| **M01-11**   | ✅ **Browser unblocked**                                    | **7/7 specs pass locally**, including the browser auth flow; acceptance needs the CI run                                                                                                                                    |
+| **M01-12**   | ⛔ **BLOCKED**                                              | Docker is not installed in this environment                                                                                                                                                                                 |
 
 Three items carried over from M00 — see
 [Carried into M01](#carried-into-m01-from-m00).
@@ -37,10 +40,12 @@ Three items carried over from M00 — see
 in
 [docs/05-delivery/IMPLEMENTATION_STATUS.md](docs/05-delivery/IMPLEMENTATION_STATUS.md).
 
-Delivered: 9 .NET projects, 7 domain modules with their invariants, a
-capability-based provider abstraction with a Stitch adapter, a durable job
-queue, artifact normalization, local asset storage, a Next.js skeleton, shared
-contract schemas, CI, and 436 passing tests.
+Delivered **at M00 closure**: 9 .NET projects, 7 domain modules with their
+invariants, a capability-based provider abstraction with a Stitch adapter, a
+durable job queue, artifact normalization, local asset storage, a Next.js
+skeleton, shared contract schemas, CI, and 436 passing tests. (That figure is
+M00's; the current total is in
+[IMPLEMENTATION_STATUS.md](docs/05-delivery/IMPLEMENTATION_STATUS.md).)
 
 Six spikes run: **three verified, two partially verified, one blocked** on
 credentials with a reproducible test plan. The authoritative split, per spike, is
@@ -73,14 +78,17 @@ Integration tests **passed, not skipped**, against PostgreSQL 15.19.
 Three items were **not** resolved in M00 and are explicitly unresolved at
 closure. Approval of M00 did not close them; each is owned by an M01 task.
 
-| Item                                                                       | Status at M00 closure                                                              | Owning task |
-| :------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- | :---------- |
-| **D-1 / D-2** — Stitch account, credential, and capped spend authorization | ⛔ **Unresolved.** Product Owner decision; no provider call was ever made          | **M01-01**  |
-| **M01-11** — Playwright Chromium not installed; E2E specs unexecuted       | ⛔ **Unresolved.** 4 specs written, `browserType.launch: Executable doesn't exist` | **M01-11**  |
-| **M01-12** — Docker not installed; `docker-compose.yml` unexecuted         | ⛔ **Unresolved.** `docker: command not found` (exit 127)                          | **M01-12**  |
+| Item                                                                       | Status at M00 closure                                                                                                                             | Owning task |
+| :------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ | :---------- |
+| **D-1 / D-2** — Stitch account, credential, and capped spend authorization | ⛔ **Unresolved.** Product Owner decision; no provider call was ever made                                                                         | **M01-01**  |
+| **M01-11** — Playwright Chromium not installed; E2E specs unexecuted       | ⛔ **Unresolved at M00 closure.** 4 specs written, `browserType.launch: Executable doesn't exist`. _(Resolved later in M01-11: now 7/7 locally.)_ |
+| **M01-12** — Docker not installed; `docker-compose.yml` unexecuted         | ⛔ **Unresolved.** `docker: command not found` (exit 127)                                                                                         | **M01-12**  |
 
-The E2E specs and `docker-compose.yml` remain **written but unverified**, and are
-labelled as such wherever they are referenced. Neither was counted toward the 436.
+**As at M00 closure** the E2E specs and `docker-compose.yml` were written but
+unverified, and neither was counted toward the 436. That is a historical
+snapshot, not the current state: the E2E suite now passes **7/7 locally**
+(M01-11, with only the CI run outstanding), while `docker-compose.yml` is still
+unexecuted because Docker is absent (M01-12).
 
 ---
 
@@ -102,9 +110,9 @@ The constraint is a gate inside the milestone, not at its boundary:
 > M01-01 may proceed until A-08 is resolved.**
 
 **Independent of A-08:** M01-02 through M01-06, M01-11 and M01-12 — subject to
-their own listed dependencies, which A-08 does not change. M01-03 still waits on
-M01-02, M01-05 and M01-06 still wait on M01-04, and M01-03 still needs the D-3
-role-model decision.
+their own listed dependencies, which A-08 does not change. M01-04 waits on M01-03
+being **accepted**, and M01-05 and M01-06 wait on M01-04. M01-03's own
+prerequisites — the D-3 role model and D-9 account proofing — are both resolved.
 
 **Gated by M01-01/A-08:** M01-07, M01-08 and M01-09, and consequently the
 **complete M01-10 UI**. M01-10 depends on M01-04 … M01-09, and its acceptance
@@ -169,7 +177,16 @@ That needs an ADR and re-approval — **not a workaround**.
 
 #### M01-02 — Authentication
 
-**Size:** M · **Depends on:** A-01 decision · **Risk:** 🟡 Medium
+**Size:** M · **Depends on:** **D-7** (resolved — Option A, ADR-0008) · **Risk:** 🟡 Medium
+
+**State:** ✅ **Accepted 2026-11-03** — APPROVED with non-blocking findings,
+after six independent review rounds (five CHANGES REQUIRED, then approval). Two
+findings remain open and were **not** closed by the approval: **D-8**
+(password-reset delivery, a fail-closed pre-production gate) and **MFA recovery
+codes** (risk R-5).
+
+Authentication does **not** depend on A-01 or D-3: the role model is
+authorization and belongs to M01-03.
 
 **Acceptance:**
 
@@ -179,20 +196,40 @@ That needs an ADR and re-approval — **not a workaround**.
 - Integration tests cover authenticated and unauthenticated paths.
 - Security headers (CSP, HSTS, X-Content-Type-Options) set — closes S-25.
 
-**Open decision for the Product Owner:** the four-role model (A-01). Needed
-before M01-03.
+**Decisions:** **D-7 resolved** (Option A). **D-3 resolved** — two roles,
+Member and Approver — which M01-03 consumes, not this task.
+
+**Raised by the Wave 2 review:** **D-8** (a password-reset delivery transport;
+recovery is unavailable without it) remains open, and **D-9** (account proofing)
+was **resolved on 2026-11-03** by ADR-0009 — trusted operator provisioning.
+
+**D-8's gate was settled on 2026-11-02** (ADR-0008 **A2**, Proposal 2 Option 2):
+it is a **fail-closed pre-production gate**, not a bar on M01-02 acceptance. **No
+Production deployment may proceed until D-8 is resolved**, enforced by the host
+refusing to start. The transport itself is still unauthorized, so recovery
+remains undelivered — which the independent acceptance of M01-02 on 2026-11-03
+recorded as a non-blocking finding rather than closing.
 
 ---
 
 #### M01-03 — Organization-scoped authorization
 
-**Size:** M · **Depends on:** M01-02 · **Risk:** 🟡 Medium
+**Size:** M · **Depends on:** M01-02 (**accepted 2026-11-03**) · **Risk:** 🟡 Medium
+
+**State:** 🔬 implemented in Wave 3 and submitted for independent review — not
+accepted. **D-9 is resolved** by
+[ADR-0009](docs/02-architecture/decisions/ADR-0009-account-proofing-is-trusted-operator-provisioning.md):
+account proofing is trusted operator provisioning, public registration grants
+nothing and is unmapped outside Development, and one active membership per user
+is modelled explicitly.
 
 **Acceptance:**
 
 - Every query is organization-scoped; a cross-organization read returns `404`,
   not `403` (no existence disclosure).
-- The four roles from A-01 are enforced on each endpoint.
+- The **two roles from D-3 — Member and Approver — are enforced** on each
+  endpoint. A user may hold both; only Approver may perform approval, rejection
+  or waiver transitions.
 - An integration test proves a user in organization A cannot read organization
   B's project, contract, screen or asset.
 - An architecture or analyzer test catches a query missing its organization
@@ -342,13 +379,17 @@ browserType.launch: Executable doesn't exist at
   .../ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell
 ```
 
-These four specs are **not** part of the 436 tests reported as passing.
+**As at M00 closure** those four specs were not part of the 436 tests then
+reported as passing. The suite is now **7 specs, 7 passing locally**, and is
+still counted separately from the backend/frontend totals because it needs two
+running processes.
 
 **Acceptance:**
 
 - `npm run test:e2e --workspace frontend` runs green locally and in CI.
 - The CI `e2e` job passes with real output, not a skip.
-- TEST_STRATEGY's "⚠ unverified" note on E2E is removed.
+- TEST_STRATEGY's "⚠ unverified" note on E2E is removed. ✅ _(done — that
+  section now records 7/7 locally with the CI run outstanding)_
 
 ---
 
@@ -390,13 +431,13 @@ of the local-development story that remains unverified.
 
 ### M01 risks
 
-| Risk                                         | Impact                       | Mitigation                                                 |
-| :------------------------------------------- | :--------------------------- | :--------------------------------------------------------- |
-| **A-08 resolves negatively**                 | 🔴 Architecture change       | M01-01 first; escalate rather than work around             |
-| Provider response shapes differ from assumed | 🟡 Rework in the adapter     | Field reads are isolated and null-tolerant                 |
-| Generation cost higher than expected         | 🟡 Quota moves earlier       | `BillableOperationsEnabled` off by default; plan step free |
-| Role model (A-01) wrong                      | 🟡 Rework in M01-02/03       | Decide before M01-03 starts                                |
-| Generation is asynchronous provider-side     | 🟡 Handler needs a poll loop | `Heartbeat` already supports long work                     |
+| Risk                                          | Impact                       | Mitigation                                                 |
+| :-------------------------------------------- | :--------------------------- | :--------------------------------------------------------- |
+| **A-08 resolves negatively**                  | 🔴 Architecture change       | M01-01 first; escalate rather than work around             |
+| Provider response shapes differ from assumed  | 🟡 Rework in the adapter     | Field reads are isolated and null-tolerant                 |
+| Generation cost higher than expected          | 🟡 Quota moves earlier       | `BillableOperationsEnabled` off by default; plan step free |
+| ~~Role model (A-01) wrong~~ — resolved by D-3 | 🟢 Closed                    | Two roles selected 2026-10-21                              |
+| Generation is asynchronous provider-side      | 🟡 Handler needs a poll loop | `Heartbeat` already supports long work                     |
 
 ---
 
@@ -440,30 +481,39 @@ it is trusted.
 
 ## Decisions needed from stakeholders
 
-| #       | Decision                                                   | Needed by         | Owner                                  |
-| :------ | :--------------------------------------------------------- | :---------------- | :------------------------------------- |
-| D-1     | **Provision a Stitch account and API key**                 | **Before M01-01** | Product Owner                          |
-| D-2     | Authorize spend for live verification, with a cap          | Before M01-01     | Product Owner                          |
-| D-3     | Confirm or collapse the four-role model (A-01)             | Before M01-03     | Product Owner                          |
-| ~~D-4~~ | ~~Accept the seven M00 ADRs~~ — ✅ **RESOLVED 2026-10-21** | —                 | Solution Architect                     |
-| D-5     | Deployment target and secret store                         | Before M02        | Solution Architect                     |
-| D-6     | Handoff package format (A-13)                              | Before M03        | Product Owner + Developer rep          |
-| **D-7** | **Authentication mechanism and identity provider**         | **Before M01-02** | **Product Owner + Solution Architect** |
+| #       | Decision                                                                                                               | Needed by                                                                                                                                                                                                                                                | Owner                                  |
+| :------ | :--------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------- |
+| D-1     | **Provision a Stitch account and API key**                                                                             | **Before M01-01**                                                                                                                                                                                                                                        | Product Owner                          |
+| D-2     | Authorize spend for live verification, with a cap                                                                      | Before M01-01                                                                                                                                                                                                                                            | Product Owner                          |
+| ~~D-3~~ | ~~Confirm or collapse the four-role model (A-01)~~ — ✅ **RESOLVED 2026-10-21**: two roles, Member + Approver          | —                                                                                                                                                                                                                                                        | Product Owner                          |
+| ~~D-4~~ | ~~Accept the seven M00 ADRs~~ — ✅ **RESOLVED 2026-10-21**                                                             | —                                                                                                                                                                                                                                                        | Solution Architect                     |
+| D-5     | Deployment target and secret store                                                                                     | Before M02                                                                                                                                                                                                                                               | Solution Architect                     |
+| D-6     | Handoff package format (A-13)                                                                                          | Before M03                                                                                                                                                                                                                                               | Product Owner + Developer rep          |
+| **D-8** | **A password-reset delivery transport** (authorized mail service)                                                      | **Before any Production deployment** — ADR-0008 **A2** (accepted 2026-11-02) makes this a fail-closed pre-production gate, enforced by the host refusing to start. It no longer gates M01-02 acceptance; recovery stays undelivered until it is resolved | **Product Owner + Solution Architect** |
+| ~~D-9~~ | ~~**Account proofing**~~ — ✅ **RESOLVED 2026-11-03**: trusted operator provisioning (ADR-0009)                        | —                                                                                                                                                                                                                                                        | Product Owner + Solution Architect     |
+| ~~D-7~~ | ~~Authentication mechanism and identity provider~~ — ✅ **RESOLVED 2026-10-21**: Option A, local Identity + cookie/BFF | —                                                                                                                                                                                                                                                        | Product Owner + Solution Architect     |
+
+> **D-7 RESOLVED — Option A: ASP.NET Core Identity backed by PostgreSQL, with
+> HttpOnly cookie sessions over a same-origin BFF proxy. Its password lifecycle, recovery,
+> lockout, MFA policy, antiforgery protection and Data Protection key
+> persistence are explicit M01 scope.**
+>
+> **D-3 RESOLVED — collapse A-01 to two roles for the MVP: Member and Approver.
+> A user may hold both. Only Approver may perform approval, rejection or waiver
+> transitions.**
+
+Both recorded 2026-10-21 by the Product Owner. D-7 selected Option A over the
+independent recommendation of Option B; the trade-off that choice accepts is
+enumerated in [ADR-0008](docs/02-architecture/decisions/ADR-0008-authentication-is-local-identity-with-cookie-sessions.md).
+
+D-3 decides **authorization**, which is **M01-03**. M01-02 therefore seeds no
+role and enforces none.
 
 **D-4 RESOLVED — The seven M00 ADRs are architecturally accepted. The
 independent M00 re-acceptance and APPROVED decision include this architectural
 sign-off.** Recorded 2026-10-21.
 
-**D-7 — authentication mechanism and identity provider. Status: Open.** Raised
-by the M01 Wave 1 audit, which found that no identity provider or authentication
-mechanism is recorded anywhere in the repository. It **blocks M01-02**, and is
-owned jointly by the Product Owner and the Solution Architect because it is both
-a product and an architecture choice.
-
-**D-7 is distinct from D-3.** D-3 selects the authorization **role model**; D-7
-selects how a request proves **who** it is. Either answer is compatible with any
-version of the other. Options, corrections and the independent recommendation are
-in [the Wave 1 report](docs/05-delivery/M01_WAVE1_REPORT.md) § 5.
+**D-7 is resolved** — see the quoted decision above and ADR-0008. It is listed once, in the decisions table; the earlier duplicate section that still called it open has been removed (W2-010).
 
 D-1 and D-2 remain on the critical path. M01's central deliverable — live
 generation — cannot start without them, and M01-01's live test plan cannot be
@@ -479,14 +529,14 @@ corrections added as prerequisites. All of those corrections landed in M00
 tasks below are unblocked — but each now has a constraint that did not exist
 when it was written. Recorded here so the constraint is not rediscovered mid-task.
 
-| Task                               | Added constraint                                                                                                                                                                                                                                                                                                               |
-| :--------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **M01-02** Authentication          | Reviewer identity must come from the authenticated principal for `approvedBy`, `waivedBy` **and** `rejectedBy`. The domain now requires a reviewer on rejection too.                                                                                                                                                           |
-| **M01-03** Authorization           | Job queries at the API boundary need their own organization-scoped query. `IJobQueue.GetAsync` is deliberately unfiltered for worker-internal use; reusing it would be a cross-tenant read.                                                                                                                                    |
-| **M01-04** Project endpoints       | Reject an out-of-range `kind` with a clear `400` before it reaches the domain, so the client sees a validation error rather than `project.invalid_kind` as a `409`.                                                                                                                                                            |
-| **M01-05** Contract endpoints      | A project has **at most one** contract (unique `project_id`). Creation must handle the conflict rather than assuming check-then-create.                                                                                                                                                                                        |
-| **M01-06** Design system endpoints | Same cardinality rule. The aggregate now has `DiscardDraft` and `TokensHash`, so the route surface can mirror M01-05 exactly, as AC-3.1 requires.                                                                                                                                                                              |
-| **M01-07** Enqueue recovery        | On losing an enqueue race, the losing transaction must be **rolled back** and recovery must use a **clean unit of work** — a failed `SaveChanges` leaves the change tracker dirty. Required by the re-acceptance review.                                                                                                       |
-| **M01-07** Generation handler      | Handlers must be idempotent _and_ tolerate losing the lease mid-flight. The dispatcher renews the lease and **cancels the handler** when renewal reports loss, so a handler must honour its `CancellationToken` rather than running to completion. `BatchSize` defaults to 1 — raising it requires concurrent execution first. |
-| **M01-08** Screen endpoints        | The reject endpoint persists reason, reviewer and timestamp. Whether resubmission retains prior review history is still open; a full review-event record is M02 work with the review UI.                                                                                                                                       |
-| **M01-09** Job endpoints           | Must distinguish _retries exhausted_ from _non-retryable_, and from the new _lease expired with no attempts left_, whose `LastError` explains that the worker terminated mid-execution. Three different user-facing messages.                                                                                                  |
+| Task                               | Added constraint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| :--------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **M01-02** Authentication          | Reviewer identity must come from the authenticated principal for `approvedBy`, `waivedBy` **and** `rejectedBy`. The domain now requires a reviewer on rejection too.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **M01-03** Organization scoping    | Tenant ownership is **transitive** through the project, so carrying `OrganizationId` only on `DesignProject` leaves contracts, design systems, screens and inventories unfilterable (W3-001). A guard that discovers its own population can only confirm the author's model — partition the whole EF model instead. **A denormalized key needs a constraint, not a comment**: "cannot drift" was true of mutation and false of creation, so the pair needs a composite foreign key (W3-RR-001). Every role change must persist its own actor (W3-002), and an upgrade must state what it did about rows predating the audit chain (W3-RR-002). |
+| **M01-04** Project endpoints       | Reject an out-of-range `kind` with a clear `400` before it reaches the domain, so the client sees a validation error rather than `project.invalid_kind` as a `409`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **M01-05** Contract endpoints      | A project has **at most one** contract (unique `project_id`). Creation must handle the conflict rather than assuming check-then-create.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **M01-06** Design system endpoints | Same cardinality rule. The aggregate now has `DiscardDraft` and `TokensHash`, so the route surface can mirror M01-05 exactly, as AC-3.1 requires.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **M01-07** Enqueue recovery        | On losing an enqueue race, the losing transaction must be **rolled back** and recovery must use a **clean unit of work** — a failed `SaveChanges` leaves the change tracker dirty. Required by the re-acceptance review.                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **M01-07** Generation handler      | Handlers must be idempotent _and_ tolerate losing the lease mid-flight. The dispatcher renews the lease and **cancels the handler** when renewal reports loss, so a handler must honour its `CancellationToken` rather than running to completion. `BatchSize` defaults to 1 — raising it requires concurrent execution first.                                                                                                                                                                                                                                                                                                                 |
+| **M01-08** Screen endpoints        | The reject endpoint persists reason, reviewer and timestamp. Whether resubmission retains prior review history is still open; a full review-event record is M02 work with the review UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **M01-09** Job endpoints           | Must distinguish _retries exhausted_ from _non-retryable_, and from the new _lease expired with no attempts left_, whose `LastError` explains that the worker terminated mid-execution. Three different user-facing messages.                                                                                                                                                                                                                                                                                                                                                                                                                  |

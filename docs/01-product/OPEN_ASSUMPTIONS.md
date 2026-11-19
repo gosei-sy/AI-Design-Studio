@@ -18,7 +18,11 @@ and we have neither, it belongs here — not in the PRD as a requirement.
 
 ### A-01 — The four roles reflect how teams actually divide this work
 
-**Status:** Open · **Confidence:** Low · **Affects:** authorization model (M01), review UX
+**Status:** ✅ **Resolved 2026-10-21 (D-3)** · **Affects:** authorization model (M01-03), review UX
+
+**Resolution.** Collapsed to **two** roles for the MVP — **Member** and **Approver**. A user may hold both. Only Approver may perform approval, rejection or waiver transitions. The four-role split was never validated, and the Product Owner chose not to build an authorization model on an unvalidated assumption. M01-02 seeded and enforced no role.
+
+**Enforcement, as built in M01-03** (implemented 2026-11-03, awaiting independent acceptance): both roles are **organization-scoped** rather than global — they live on an `auth.organization_memberships` row, not in ASP.NET Core Identity's global role table, so an Approver is an approver of one organization only. At least one role is required, and the database refuses a membership with none. Roles are granted only by trusted operator provisioning ([ADR-0009](../02-architecture/decisions/ADR-0009-account-proofing-is-trusted-operator-provisioning.md), D-9): a self-registered account has neither.
 
 We assume Product Owner, UX Lead, Developer and Reviewer are meaningful distinct
 roles with the authority split in PRD §3. In small teams one person may hold all
