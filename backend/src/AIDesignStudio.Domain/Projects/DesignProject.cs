@@ -44,6 +44,13 @@ public sealed class DesignProject : AggregateRoot
     /// </summary>
     public ProjectOwnership Ownership => ProjectOwnership.Of(OrganizationId, Id);
 
+    /// <summary>
+    /// The longest name, after trimming. Matches the <c>varchar(200)</c> column:
+    /// without the rule a longer name reached the database and failed there as an
+    /// unclassified error rather than a coded one (M01-04).
+    /// </summary>
+    public const int MaxNameLength = 200;
+
     public static DesignProject Create(Guid organizationId, string name, ProjectKind kind, IClock clock)
     {
         if (organizationId == Guid.Empty)
@@ -51,10 +58,7 @@ public sealed class DesignProject : AggregateRoot
             throw new DomainException("project.organization_required", "A project must belong to an organization.");
         }
 
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new DomainException("project.name_required", "A project must have a name.");
-        }
+        var trimmed = ValidName(name);
 
         // Guarding the enum matters because Kind is immutable and drives workflow
         // gating. A cast like (ProjectKind)999 would otherwise persist — enums are
@@ -70,7 +74,7 @@ public sealed class DesignProject : AggregateRoot
         return new DesignProject
         {
             OrganizationId = organizationId,
-            Name = name.Trim(),
+            Name = trimmed,
             Kind = kind,
             CreatedAt = clock.UtcNow,
         };
@@ -78,12 +82,26 @@ public sealed class DesignProject : AggregateRoot
 
     public void Rename(string name, IClock clock)
     {
+        Name = ValidName(name);
+        Touch(clock);
+    }
+
+    private static string ValidName(string name)
+    {
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new DomainException("project.name_required", "A project must have a name.");
         }
 
-        Name = name.Trim();
-        Touch(clock);
+        var trimmed = name.Trim();
+
+        if (trimmed.Length > MaxNameLength)
+        {
+            throw new DomainException(
+                "project.name_too_long",
+                $"A project name may be at most {MaxNameLength} characters; got {trimmed.Length}.");
+        }
+
+        return trimmed;
     }
 }

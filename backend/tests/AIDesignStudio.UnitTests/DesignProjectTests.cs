@@ -78,6 +78,43 @@ public sealed class DesignProjectTests
     }
 
     /// <summary>
+    /// The column is <c>varchar(200)</c>. Without a domain rule a longer name
+    /// reached the database and failed there as an unclassified 500 instead of a
+    /// coded error — the same rule <c>organization.name_too_long</c> states for
+    /// organizations (M01-04).
+    /// </summary>
+    [Fact]
+    public void Create_rejects_a_name_longer_than_two_hundred_characters()
+    {
+        Should.Throw<DomainException>(() =>
+                DesignProject.Create(
+                    Guid.CreateVersion7(), new string('a', 201), ProjectKind.NewProduct, _clock))
+            .Code.ShouldBe("project.name_too_long");
+    }
+
+    /// <summary>Measured after trimming, which is what is stored.</summary>
+    [Fact]
+    public void Create_measures_the_name_after_trimming()
+    {
+        var name = $"  {new string('a', 200)}  ";
+
+        DesignProject.Create(Guid.CreateVersion7(), name, ProjectKind.NewProduct, _clock)
+            .Name.Length.ShouldBe(200);
+    }
+
+    [Fact]
+    public void Rename_rejects_a_name_longer_than_two_hundred_characters()
+    {
+        var project = DesignProject.Create(
+            Guid.CreateVersion7(), "Acme", ProjectKind.NewProduct, _clock);
+
+        Should.Throw<DomainException>(() => project.Rename(new string('a', 201), _clock))
+            .Code.ShouldBe("project.name_too_long");
+
+        project.Name.ShouldBe("Acme");
+    }
+
+    /// <summary>
     /// There is deliberately no API to change the workflow kind: the two
     /// workflows have different required inputs and different completion
     /// criteria, so switching would invalidate gate state.
