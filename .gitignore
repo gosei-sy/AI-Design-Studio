@@ -20,7 +20,10 @@ TestResults/
 *.trx
 *.coverage
 coverage/
-artifacts/
+# Root only. Unanchored, this also matched backend/src/*/Artifacts/ wherever
+# the filesystem is case-insensitive (core.ignorecase=true on Windows/macOS),
+# and silently left those source files out of a commit.
+/artifacts/
 
 # --- Node / Next ------------------------------------------------------------
 node_modules/
