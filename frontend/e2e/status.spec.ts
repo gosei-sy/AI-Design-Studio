@@ -106,6 +106,19 @@ test.describe("system status page", () => {
     await expect(providers).not.toContainText(/Sign in to view provider status/i);
   });
 
+  /**
+   * `--font-sans` once resolved to itself (`var(--font-sans)`), which is invalid,
+   * so every page silently fell back to the browser's default serif. Nothing
+   * failed; it only looked wrong in a screenshot.
+   */
+  test("renders in the studio typeface, not the browser default", async ({ page }) => {
+    await page.goto("/");
+
+    const family = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
+
+    expect(family).toMatch(/Geist/);
+  });
+
   test("never renders a credential value", async ({ page }) => {
     await page.goto("/");
 
