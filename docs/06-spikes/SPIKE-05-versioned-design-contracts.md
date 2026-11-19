@@ -165,9 +165,9 @@ single `design_contract_versions` row through the ORM is exactly what
 
 | Item                                                          | Milestone                                                                  |
 | :------------------------------------------------------------ | :------------------------------------------------------------------------- |
-| Contract CRUD endpoints                                       | M01                                                                        |
-| JSON Schema validation at the API boundary                    | M01 (schema exists, with 164 shared contract tests)                        |
-| Referential validation: flow steps referencing listed screens | M01                                                                        |
+| Contract CRUD endpoints                                       | ✅ **Verified in M01-05** — `ContractEndpointsTests` (not yet reviewed)    |
+| JSON Schema validation at the API boundary                    | ✅ **Verified in M01-05** — and pinned to Ajv by a 157-case corpus         |
+| Referential validation: flow steps referencing listed screens | ✅ **Verified in M01-05** — `422 contract.unknown_screen_reference`        |
 | Concurrent approval under real contention                     | Index verified by direct violation; a load test is post-MVP                |
 | Payload size limits                                           | M02. Note: `jsonb` has a 255 MB ceiling, far above any realistic contract. |
 

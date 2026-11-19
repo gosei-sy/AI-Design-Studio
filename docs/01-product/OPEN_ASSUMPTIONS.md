@@ -215,8 +215,8 @@ handoff.
 
 ### A-16 — An Approver-only member may read but not author
 
-**Status:** Open · **Confidence:** Medium · **Affects:** every authoring endpoint
-from M01-04 on, the studio's affordances
+**Status:** Accepted risk (2026-11-19) · **Confidence:** Medium · **Affects:**
+every authoring endpoint from M01-04 on, the studio's affordances
 
 D-3 settled two roles and that only Approver may approve, reject or waive. It
 did not say what a membership holding **Approver alone** may do, and such a
@@ -229,6 +229,16 @@ returns `403 authz.member_required` to an Approver-only account.
 implies Member), or provisioning refuses Approver without Member. Both are small
 changes now and grow with each authoring endpoint, so this should be settled
 before M01-05.
+
+**Decided for now, not validated.** On 2026-11-19 the repository owner was
+asked to choose and delegated the choice ("take the best option"). The
+engineering judgment recorded here is to **keep this reading**, for two reasons:
+it is the least privilege consistent with D-3's "a user may hold both", which
+only makes sense if the two roles are separate; and it is the reversible
+direction — letting Approver author later breaks no client, while taking
+authoring away later would. M01-05 builds on it: Approver-only accounts can
+read and approve a contract but not draft, edit or discard one. That is an
+engineering decision under delegation, **not a Product Owner ruling**.
 
 **How to validate:** a Product Owner decision — does granting Approver alone
 mean "reviewer only", or is Member implied?

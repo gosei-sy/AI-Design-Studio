@@ -61,12 +61,12 @@ connection string from the platform.
 
 ## 2. Input validation and injection
 
-| #    | Requirement                                                   | Status                            |
-| :--- | :------------------------------------------------------------ | :-------------------------------- |
-| S-7  | All SQL is parameterised                                      | **Met**                           |
-| S-8  | Uploaded artifacts are treated as fully untrusted             | **Met and verified**              |
-| S-9  | Provider output is parsed, never evaluated                    | **Met**                           |
-| S-10 | Payloads validate against a schema before reaching the domain | Schema exists; API wiring **M01** |
+| #    | Requirement                                                   | Status                                                                                                                                                                                                |
+| :--- | :------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-7  | All SQL is parameterised                                      | **Met**                                                                                                                                                                                               |
+| S-8  | Uploaded artifacts are treated as fully untrusted             | **Met and verified**                                                                                                                                                                                  |
+| S-9  | Provider output is parsed, never evaluated                    | **Met**                                                                                                                                                                                               |
+| S-10 | Payloads validate against a schema before reaching the domain | ✅ **Design contract — M01-05** (ADR-0010, proposed): schema, storage rules and the referential rule run before the domain; refusals are bounded to 100 errors and 1 MiB. Design system is **M01-06** |
 
 **SQL.** EF Core throughout. The one raw query uses `FromSql` with interpolation,
 which produces parameters rather than string concatenation:

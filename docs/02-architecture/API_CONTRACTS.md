@@ -52,6 +52,8 @@ messages are for humans and may change without notice.
 | 403    | Signed in, but no active membership (`authz.no_organization_membership`) or a missing role (M01-03) |
 | 404    | Resource or provider not found                                                                      |
 | 409    | Domain invariant violated (`DomainException`)                                                       |
+| 413    | A design contract larger than 1 MiB — `contract.payload_too_large`                                  |
+| 415    | A design contract not sent as `application/json` — `request.unsupported_media_type`                 |
 | 422    | Semantically invalid but well-formed (e.g. flow references an unlisted screen)                      |
 | 429    | **(planned, M02)** rate or quota limit                                                              |
 | 503    | Dependency unavailable                                                                              |
@@ -60,43 +62,45 @@ messages are for humans and may change without notice.
 
 The full set currently raised, by module:
 
-| Code                                                                                              | Meaning                                                  |
-| :------------------------------------------------------------------------------------------------ | :------------------------------------------------------- |
-| `project.organization_required`, `project.name_required`                                          |                                                          |
-| `organization.name_required`, `organization.name_too_long`                                        |                                                          |
-| `membership.organization_required`, `membership.user_required`                                    |                                                          |
-| `membership.role_required`                                                                        | No roles, or an attempt to remove the last one           |
-| `membership.invalid_role`                                                                         | A role this application does not define                  |
-| `membership.provisioner_required`, `membership.revoker_required`                                  | An unattributed grant or withdrawal of access            |
-| `membership.revoked`, `membership.already_revoked`                                                | Illegal state transition                                 |
-| `authz.approver_required`                                                                         | Only an Approver may approve, reject or waive            |
-| `authz.no_organization_membership`                                                                | Authenticated, but provisioned by nobody                 |
-| `organization.not_found`                                                                          | Includes any organization that is not the caller's own   |
-| `project.invalid_kind`                                                                            | Kind outside `NewProduct` / `Redesign`                   |
-| `project.name_too_long`                                                                           | More than 200 characters after trimming (M01-04)         |
-| `project.not_found`                                                                               | Includes any project that is not the caller's own        |
-| `authz.member_required`                                                                           | Authoring needs Member; the caller is Approver-only      |
-| `contract.project_required`, `contract.payload_required`                                          |                                                          |
-| `contract.draft_already_open`                                                                     | A draft is already open                                  |
-| `contract.no_draft`, `contract.approver_required`                                                 |                                                          |
-| `contract.version_immutable`                                                                      | Attempt to edit an approved or superseded version        |
-| `contract.not_draft`, `contract.not_approved`                                                     | Illegal state transition                                 |
-| `design_system.*`                                                                                 | Same shape as `contract.*`                               |
-| `screen.key_required`, `screen.project_required`                                                  |                                                          |
-| `screen.contract_version_required`                                                                | Version must record its contract                         |
-| `screen.contract_drift`                                                                           | **Produced against a superseded contract**               |
-| `screen.not_in_review`, `screen.not_submittable`                                                  |                                                          |
-| `screen.rejection_reason_required`, `screen.approver_required`                                    |                                                          |
-| `screen.rejector_required`                                                                        | A rejection must record the reviewer                     |
-| `screen.version_not_found`                                                                        |                                                          |
-| `inventory.key_required`, `inventory.duplicate_key`                                               |                                                          |
-| `inventory.covering_screen_required`                                                              | Coverage must reference a real screen                    |
-| `inventory.waiver_reason_required`, `inventory.waiver_owner_required`                             |                                                          |
-| `inventory.uncovered_features`                                                                    | **Handoff blocked by undecided features**                |
-| `asset.organization_required`, `asset.storage_key_required`, `asset.empty`, `asset.hash_required` |                                                          |
-| `job.kind_required`, `job.idempotency_key_required`, `job.invalid_max_attempts`                   |                                                          |
-| `job.not_running`, `job.lease_not_held`, `job.already_terminal`, `job.not_found`                  |                                                          |
-| `job.attempts_remain`                                                                             | Lease expiry cannot dead-letter a job with attempts left |
+| Code                                                                                              | Meaning                                                   |
+| :------------------------------------------------------------------------------------------------ | :-------------------------------------------------------- |
+| `project.organization_required`, `project.name_required`                                          |                                                           |
+| `organization.name_required`, `organization.name_too_long`                                        |                                                           |
+| `membership.organization_required`, `membership.user_required`                                    |                                                           |
+| `membership.role_required`                                                                        | No roles, or an attempt to remove the last one            |
+| `membership.invalid_role`                                                                         | A role this application does not define                   |
+| `membership.provisioner_required`, `membership.revoker_required`                                  | An unattributed grant or withdrawal of access             |
+| `membership.revoked`, `membership.already_revoked`                                                | Illegal state transition                                  |
+| `authz.approver_required`                                                                         | Only an Approver may approve, reject or waive             |
+| `authz.no_organization_membership`                                                                | Authenticated, but provisioned by nobody                  |
+| `organization.not_found`                                                                          | Includes any organization that is not the caller's own    |
+| `project.invalid_kind`                                                                            | Kind outside `NewProduct` / `Redesign`                    |
+| `project.name_too_long`                                                                           | More than 200 characters after trimming (M01-04)          |
+| `project.not_found`                                                                               | Includes any project that is not the caller's own         |
+| `authz.member_required`                                                                           | Authoring needs Member; the caller is Approver-only       |
+| `contract.project_required`, `contract.payload_required`                                          |                                                           |
+| `contract.draft_already_open`                                                                     | A draft is already open                                   |
+| `contract.no_draft`, `contract.approver_required`                                                 |                                                           |
+| `contract.version_immutable`                                                                      | Attempt to edit an approved or superseded version         |
+| `contract.not_draft`, `contract.not_approved`                                                     | Illegal state transition                                  |
+| `contract.payload_invalid`, `contract.unknown_screen_reference`, `contract.payload_too_large`     | A draft body refused before the domain (§3c); 400/422/413 |
+| `authz.approver_required`                                                                         | Also returned by the Approver policy, as a coded 403      |
+| `design_system.*`                                                                                 | Same shape as `contract.*`                                |
+| `screen.key_required`, `screen.project_required`                                                  |                                                           |
+| `screen.contract_version_required`                                                                | Version must record its contract                          |
+| `screen.contract_drift`                                                                           | **Produced against a superseded contract**                |
+| `screen.not_in_review`, `screen.not_submittable`                                                  |                                                           |
+| `screen.rejection_reason_required`, `screen.approver_required`                                    |                                                           |
+| `screen.rejector_required`                                                                        | A rejection must record the reviewer                      |
+| `screen.version_not_found`                                                                        |                                                           |
+| `inventory.key_required`, `inventory.duplicate_key`                                               |                                                           |
+| `inventory.covering_screen_required`                                                              | Coverage must reference a real screen                     |
+| `inventory.waiver_reason_required`, `inventory.waiver_owner_required`                             |                                                           |
+| `inventory.uncovered_features`                                                                    | **Handoff blocked by undecided features**                 |
+| `asset.organization_required`, `asset.storage_key_required`, `asset.empty`, `asset.hash_required` |                                                           |
+| `job.kind_required`, `job.idempotency_key_required`, `job.invalid_max_attempts`                   |                                                           |
+| `job.not_running`, `job.lease_not_held`, `job.already_terminal`, `job.not_found`                  |                                                           |
+| `job.attempts_remain`                                                                             | Lease expiry cannot dead-letter a job with attempts left  |
 
 ### Provider error codes
 
@@ -119,7 +123,8 @@ Normative definitions, used by both the API and the studio UI:
 - `packages/contracts/schemas/design-system.schema.json`
 
 TypeScript mirrors live in `packages/contracts/src/index.ts`. Three suites keep
-them aligned (164 tests total):
+them aligned, and a fourth keeps the API's validator aligned with the studio's
+(169 tests total):
 
 - `contracts.test.ts` validates hand-written fixtures against the schemas.
 - `schema-alignment.test.ts` is a **bidirectional structural check**: declared
@@ -132,6 +137,12 @@ them aligned (164 tests total):
   `additionalProperties` contract is probed with a conforming and a
   non-conforming value. A newly nested object fails the coverage assertion, so
   coverage cannot silently shrink.
+- `conformance.test.ts` guards `conformance/design-contract.cases.json`: 157
+  documents with the verdict **Ajv** gives each, checked in. It fails if the file
+  is not exactly what Ajv produces for the current schema, or if any validation
+  keyword in the schema never fails in it. The API's .NET validator is tested
+  against the same file (`SchemaConformanceTests`), which is what makes "the API
+  and the studio enforce one definition" a tested statement (ADR-0010).
 
 **The alignment is structural, not semantic.** All three suites compare shape:
 which properties exist, which are required, and what an `additionalProperties`
@@ -142,7 +153,8 @@ lengths and font-family bounds.
 
 The practical consequence: **the schema is the only authority on value format**,
 and the API must validate every payload against it rather than trusting that a
-typed client sent something well-formed. Closing the gap would mean generating
+typed client sent something well-formed. **Since M01-05 it does, for the design
+contract** (§3c); the design system follows in M01-06. Closing the gap would mean generating
 these types from the schemas, which is deliberately out of M00 scope; nothing in
 `packages/contracts/src` is generated today.
 
@@ -409,6 +421,153 @@ One project. `200`, `401`, `403` (`authz.no_organization_membership`), or **`404
 that never existed** (same status, code and detail), so the endpoint cannot be
 used to learn that someone else's project exists.
 
+## 3c. Design contract — implemented (M01-05)
+
+**Implemented on 2026-11-19 under delegated authorization, stacked on M01-04 and
+therefore ahead of both M01-03's and M01-04's acceptance.** Not independently
+reviewed. The validation mechanism is **ADR-0010 (proposed)**.
+
+A project has **one** contract. The resource is singular and always addressable:
+before the first draft it reads as empty rather than missing. Every route is
+under `/api/v1/projects/{projectId}/contract`, so tenancy is the project's —
+another organization's contract is the same `404 project.not_found` as a project
+that does not exist, on **every** route
+(`ContractEndpointsTests.Another_organizations_contract_is_indistinguishable_from_a_missing_project`).
+
+| Method   | Path suffix               | Role         | Success                |
+| :------- | :------------------------ | :----------- | :--------------------- |
+| `GET`    | _(none)_                  | any member   | `200` approved + draft |
+| `GET`    | `/versions`               | any member   | `200` history          |
+| `POST`   | `/drafts`                 | **Member**   | `201` + `Location`     |
+| `PUT`    | `/drafts/current`         | **Member**   | `200` the draft        |
+| `DELETE` | `/drafts/current`         | **Member**   | `204`                  |
+| `POST`   | `/drafts/current/approve` | **Approver** | `200` the approved one |
+
+Roles are **policies on the routes**, and
+`ContractEndpointsTests.Every_route_that_changes_something_requires_an_organization_role`
+walks the whole route table so no write route can be added without one. A policy
+refusal is a coded 403 — `authz.no_organization_membership`,
+`authz.member_required` or `authz.approver_required`. The four write routes
+require an antiforgery token.
+
+### A version
+
+```json
+{
+  "id": "019a8c...",
+  "versionNumber": 2,
+  "status": "Approved",
+  "payload": { "schemaVersion": 1, "product": { "name": "Acme", "platforms": ["web"] } },
+  "payloadHash": "9f2c… (64 hex characters)",
+  "approvedBy": "019a8b… (the approver's user id)",
+  "approvedAt": "2026-11-19T10:00:00+00:00",
+  "createdAt": "2026-11-19T09:58:00+00:00"
+}
+```
+
+`status` is `Draft`, `Approved` or `Superseded`. `payloadHash`, `approvedBy` and
+`approvedAt` are null on a draft. **`approvedBy` is the approver's immutable user
+id**, taken from the session — never from the request, and never an email
+address (W2-005).
+
+- `GET …/contract` → `{ "projectId", "approved": <version or null>, "draft": <version or null> }`
+- `GET …/contract/versions` → `{ "projectId", "versions": [ … ] }`, newest first,
+  **each with its payload**, so a superseded version stays readable (S-07).
+
+### The body of a draft
+
+`POST …/drafts` and `PUT …/drafts/current` take **the contract document itself**
+as `application/json` — not a wrapper around it. It is checked before anything
+is stored, and the first check that finds something ends the run:
+
+| Refusal                                       | Status | `code`                              |
+| :-------------------------------------------- | :----- | :---------------------------------- |
+| Not declared as JSON                          | `415`  | `request.unsupported_media_type`    |
+| Larger than 1 MiB (provisional; M02)          | `413`  | `contract.payload_too_large`        |
+| Not one JSON document                         | `400`  | `contract.payload_invalid`          |
+| Cannot be stored as what it says              | `400`  | `contract.payload_invalid`          |
+| Breaks `design-contract.schema.json` (AC-2.6) | `400`  | `contract.payload_invalid`          |
+| A flow step names an unlisted screen (AC-2.7) | `422`  | `contract.unknown_screen_reference` |
+
+The 400 and 422 carry the failures:
+
+```json
+{
+  "code": "contract.payload_invalid",
+  "errors": [
+    {
+      "pointer": "/product/name",
+      "keyword": "minLength",
+      "message": "must NOT have fewer than 1 characters"
+    },
+    {
+      "pointer": "",
+      "keyword": "additionalProperties",
+      "message": "must NOT have additional property 'owner'"
+    }
+  ],
+  "truncated": false
+}
+```
+
+`pointer` is an RFC 6901 JSON Pointer to the instance that failed and `keyword`
+is the schema rule — **the same pair the studio's validator reports**, so a
+client can treat a local refusal and an API one alike. For `required` and
+`additionalProperties` the pointer is the object missing or carrying the
+property, as Ajv has it. Branch on `keyword`, never on `message`. At most 100
+errors are returned; `truncated` says when there were more.
+
+**"Cannot be stored as what it says"** is the API being stricter than the schema
+on purpose (ADR-0010). PostgreSQL `jsonb` keeps one member per name, refuses
+U+0000 and unpaired surrogates, and holds numbers as `numeric`; a duplicated
+property (`duplicateProperty`), such text (`encoding`) or a number that cannot be
+held exactly (`number`) is refused by pointer rather than becoming a 500 or
+being stored as a different value from the one validated.
+
+### What "stored" means
+
+The contract is held as `jsonb`. **It comes back as the same JSON value, not the
+same bytes**: keys reordered, whitespace gone, `1.0` as `1`. The schema's
+description used to say the payload is stored "verbatim"; it is not, and now says
+so. Consequently:
+
+- `payloadHash` is the SHA-256 of **the stored text** — PostgreSQL's rendering of
+  the `jsonb` value. It identifies a version's content and is what a screen
+  records to detect contract drift. It is **not** recomputable from the `payload`
+  in a response, which is the same value re-serialized.
+- `ContractEndpointsTests` audits this in SQL —
+  `sha256(payload_json::text) = payload_hash` for every non-draft version — so
+  the check does not share code with the thing it checks.
+
+### Transitions and refusals
+
+| Request                                     | Result                                               |
+| :------------------------------------------ | :--------------------------------------------------- |
+| Open a draft while one is open              | `409 contract.draft_already_open`                    |
+| Edit, with an approved version and no draft | `409 contract.version_immutable` — nothing changes   |
+| Edit, discard or approve with no draft      | `409 contract.no_draft` — and no row is created      |
+| Approve                                     | Draft → `Approved`; previous approved → `Superseded` |
+| Discard                                     | The draft is deleted; its number is reused           |
+
+**Writes to one project's contract are serialized** by a row lock on the project
+(`ProjectWriteLock`). Without it, an approval and an edit of the same draft
+arriving together both succeed — they write different columns — and leave an
+_approved_ version whose payload is not the one that was hashed. No constraint
+catches that.
+`An_edit_racing_an_approval_cannot_leave_an_approved_version_that_disagrees_with_its_hash`
+forces the interleaving and asserts the outcome.
+
+### Not done, deliberately
+
+- **Duplicate screen keys and duplicate flow keys are accepted.** They are
+  schema-valid, and whether to refuse them is a product rule nobody has stated.
+  The conformance corpus pins the current verdict.
+- **Two people editing one draft are not told about each other.** The lock makes
+  the two edits happen in order; the later one wins. Detecting that needs a
+  version token in the request — a contract change for M01-10, when there is an
+  editor to send it.
+- **No endpoint for a single historical version.** History carries the payloads.
+
 ---
 
 ## 4. Planned endpoints
@@ -422,14 +581,7 @@ for a description of the current system.
 
 ### Design contracts (M01)
 
-| Method   | Path                                                    | Notes                                                  |
-| :------- | :------------------------------------------------------ | :----------------------------------------------------- |
-| `GET`    | `/api/v1/projects/{id}/contract`                        | Current approved version plus any open draft           |
-| `POST`   | `/api/v1/projects/{id}/contract/drafts`                 | 409 `contract.draft_already_open`                      |
-| `PUT`    | `/api/v1/projects/{id}/contract/drafts/current`         | 409 `contract.version_immutable` if not a draft        |
-| `POST`   | `/api/v1/projects/{id}/contract/drafts/current/approve` | Supersedes the previous approved version; records hash |
-| `DELETE` | `/api/v1/projects/{id}/contract/drafts/current`         |                                                        |
-| `GET`    | `/api/v1/projects/{id}/contract/versions`               | History                                                |
+**Implemented** — see §3c.
 
 ### Design systems (M01)
 

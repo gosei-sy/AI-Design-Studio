@@ -82,11 +82,11 @@ Run these and report their **actual** output.
 ```bash
 # Backend
 dotnet build                         # warnings are errors
-dotnet test                                    # 509 tests
+dotnet test                                    # 824 tests
 dotnet format --verify-no-changes
 
 # Frontend and shared contracts
-npm test                             # 19 + 164 tests
+npm test                             # 19 + 169 tests
 npm run typecheck
 npm run lint
 npm run format:check
@@ -100,8 +100,8 @@ dotnet-ef migrations has-pending-model-changes \
 
 Integration tests need PostgreSQL on `localhost:5432`, or
 `AIDS_TEST_CONNECTION` pointing elsewhere. Without it those tests **skip with a
-reason** rather than failing — if you see skips, say so; do not report 509 passed
-when 219 skipped.
+reason** rather than failing — if you see skips, say so; do not report 824 passed
+when 268 skipped.
 
 ---
 

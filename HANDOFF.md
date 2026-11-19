@@ -28,8 +28,18 @@ Read this, then [CLAUDE.md](CLAUDE.md) (the mandatory working rules), then
 >   **authorized ahead of it** and implemented on branch
 >   `gosei-sy/m01-04-project-endpoints` — unmerged until M01-03 is accepted, not
 >   reviewed. "Do not start M01-04" below is superseded by that authorization,
->   not by M01-03's acceptance. Assumption **A-16** (what an Approver-only member
->   may do) is open and should be settled before M01-05.
+>   not by M01-03's acceptance.
+> - **M01-05 (design contract endpoints) is implemented too**, on
+>   `gosei-sy/m01-05-contract-endpoints`, stacked on M01-04 — started when the
+>   owner, asked to choose, said to take the best option. Not reviewed. Three
+>   things in it are decisions a reviewer may overturn: **ADR-0010 (proposed)** —
+>   the API validates with its own small validator, pinned to Ajv by a shared
+>   corpus, because the usual .NET library now has a fee-bearing licence;
+>   **A-16** — an Approver-only member reads and approves but does not author
+>   (accepted as a risk, not ruled on by the Product Owner); and contract
+>   writes are serialized by a row lock on the project.
+> - **Do not start M01-06** without authorization. It also needs a conformance
+>   corpus for the design system schema before it can claim what M01-05 claims.
 
 > **⚠ There is another project in this workspace.** `/workspace/SocNhoEnglishV2`
 > holds **M13.87**, household/pilot work, `pilot-web.yml`, IndexedDB queues.

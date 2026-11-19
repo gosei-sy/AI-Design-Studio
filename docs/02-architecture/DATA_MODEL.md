@@ -153,6 +153,27 @@ which bypasses the aggregate and asserts the constraint name.
 `A_payload_column_is_stored_as_jsonb_and_is_queryable_as_json`, which uses the
 `->>` operator (it would fail on a text column).
 
+**`jsonb` keeps the value, not the bytes (M01-05).** Keys are reordered,
+whitespace is dropped, a repeated member keeps only its last occurrence, and
+U+0000 is refused. Two consequences follow, and both are enforced rather than
+hoped for:
+
+- **`payload_hash` is the SHA-256 of the stored text**, because approval hashes
+  the payload as loaded. `ContractEndpointsTests` recomputes it in SQL
+  (`sha256(payload_json::text)`) for every non-draft version.
+- **The API refuses what `jsonb` would change or reject** — duplicate members,
+  U+0000, unpaired surrogates, numbers it cannot hold exactly — so the value
+  stored is the value that was validated (ADR-0010).
+
+**The row-level invariants do not cover two writers.** An approval writes
+`status` and `payload_hash`; an edit writes `payload_json`. Arriving together on
+one draft, both succeed and leave an approved version whose payload is not the
+one hashed. Contract writes are therefore serialized per project by
+`ProjectWriteLock` — `SELECT … FROM app.projects … FOR NO KEY UPDATE`, which
+does not block the `FOR KEY SHARE` taken by foreign-key checks from other
+children. Verified by
+`An_edit_racing_an_approval_cannot_leave_an_approved_version_that_disagrees_with_its_hash`.
+
 ---
 
 ## 4. DesignSystems module

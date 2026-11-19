@@ -7,21 +7,21 @@ have an automated test. An invariant without a test is not implemented.
 
 ## 1. Current state
 
-| Suite                              |   Tests | Needs      | Runtime    |
-| :--------------------------------- | ------: | :--------- | :--------- |
-| `AIDesignStudio.UnitTests`         |     265 | nothing    | ~7 s       |
-| `AIDesignStudio.ArchitectureTests` |      25 | nothing    | ~7 s       |
-| `AIDesignStudio.IntegrationTests`  |     219 | PostgreSQL | ~95 s      |
-| `frontend` (Vitest)                |      19 | nothing    | ~43 s      |
-| `packages/contracts` (Vitest)      |     164 | nothing    | ~6 s       |
-| **Total**                          | **692** |            | **~2 min** |
+| Suite                              |    Tests | Needs      | Runtime    |
+| :--------------------------------- | -------: | :--------- | :--------- |
+| `AIDesignStudio.UnitTests`         |      531 | nothing    | ~7 s       |
+| `AIDesignStudio.ArchitectureTests` |       25 | nothing    | ~7 s       |
+| `AIDesignStudio.IntegrationTests`  |      268 | PostgreSQL | ~95 s      |
+| `frontend` (Vitest)                |       19 | nothing    | ~43 s      |
+| `packages/contracts` (Vitest)      |      169 | nothing    | ~6 s       |
+| **Total**                          | **1012** |            | **~2 min** |
 
-Measured on 2026-11-19, on the M01-04 branch. M01-04 added 32 backend tests
-(29 integration in `ProjectEndpointsTests`, 3 unit); the frontend gained five
-the same day for the server-side session forwarding. The backend suite is `509`
-of that total (`dotnet test`), and the frontend `183` (`npm test`). Per-class
-figures below count **executed cases** — a theory with four rows is four —
-taken from the xUnit XML report of that run.
+Measured on 2026-11-19, on the M01-05 branch. M01-04 added 32 backend tests and
+M01-05 a further 315 — most of them the 157-case conformance corpus the API's
+schema validator is held to. The backend suite is `824` of that total
+(`dotnet test`), and the frontend `188` (`npm test`). Per-class figures below
+count **executed cases** — a theory with four rows is four — taken from the
+xUnit XML report of that run.
 
 **`MigrationUpgradeTests` is a shape this suite did not have before.** It starts
 at a _named prior migration_, seeds the rows a real deployment would already
@@ -68,24 +68,28 @@ clock for anything time-dependent.
 
 Counted by test class, not by file: `StitchAdapterTests.cs` holds two classes.
 
-| Class                          |   Tests | Covers                                                                           |
-| :----------------------------- | ------: | :------------------------------------------------------------------------------- |
-| `OrganizationMembershipTests`  |      35 | Membership invariants, attributed role changes, audit chain, revocation (M01-03) |
-| `JobRecordTests`               |      27 | Lease fencing, crash recovery, attempt exhaustion, retry classification, backoff |
-| `ProvisioningCommandLineTests` |      26 | `aids-provision` parsing; no option accepts a secret (M01-03)                    |
-| `StitchThemeProjectionTests`   |      24 | Lossy projection and per-token warnings, including `/color/roles/*` paths        |
-| `StitchDesignProviderTests`    |      20 | Capabilities, cost guard, retry, readiness totality                              |
-| `ScreenApprovalTests`          |      20 | Provenance, contract-drift guard, atomic approval, rejection feedback            |
-| `DesignSystemTests`            |      20 | **Design system lifecycle parity** (added for CX-007)                            |
-| `PasswordResetNotifierTests`   |      16 | Reset delivery never leaks the token or throws at request time (M01-02)          |
-| `DesignContractTests`          |      15 | Versioning, immutability, supersession, hashing, collection safety               |
-| `DesignProjectTests`           |      14 | Workflow kind validation and immutability; 200-character name limit (M01-04)     |
-| `FeatureInventoryTests`        |      14 | Coverage states, handoff gate, invariant-bypass guards                           |
-| `AssetStorageTests`            |      14 | Round-trip, hashing, path confinement                                            |
-| `ArtifactParsingTests`         |      12 | Normalization and fidelity limits                                                |
-| `StitchEnvelopeParsingTests`   |       5 | Both CLI response shapes, failure modes                                          |
-| `JobDispatcherLeaseTests`      |       3 | Fail-closed renewal: heartbeat loss, heartbeat throwing, shutdown (R3-001B)      |
-| **Total**                      | **265** |                                                                                  |
+| Class                                 |   Tests | Covers                                                                                                                                                              |
+| :------------------------------------ | ------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SchemaConformanceTests`              |     158 | **The API's validator against Ajv's recorded verdicts** — 157 cases plus a guard that the corpus is the real one (M01-05, ADR-0010)                                 |
+| `JsonSchemaValidatorTests`            |      68 | The validator fails closed on unimplemented keywords and on regex constructs whose meaning differs between .NET and ECMA-262; value semantics; bounded output       |
+| `OrganizationMembershipTests`         |      35 | Membership invariants, attributed role changes, audit chain, revocation (M01-03)                                                                                    |
+| `JobRecordTests`                      |      27 | Lease fencing, crash recovery, attempt exhaustion, retry classification, backoff                                                                                    |
+| `DesignContractPayloadValidatorTests` |      26 | What may become a contract: not-JSON, schema, the referential rule, and what `jsonb` cannot store faithfully (duplicates, U+0000, lone surrogates, inexact numbers) |
+| `ProvisioningCommandLineTests`        |      26 | `aids-provision` parsing; no option accepts a secret (M01-03)                                                                                                       |
+| `StitchThemeProjectionTests`          |      24 | Lossy projection and per-token warnings, including `/color/roles/*` paths                                                                                           |
+| `DesignContractTests`                 |      20 | Versioning, immutability, supersession, hashing, collection safety; `UpdateDraft` (M01-05)                                                                          |
+| `DesignSystemTests`                   |      20 | **Design system lifecycle parity** (added for CX-007)                                                                                                               |
+| `ScreenApprovalTests`                 |      20 | Provenance, contract-drift guard, atomic approval, rejection feedback                                                                                               |
+| `StitchDesignProviderTests`           |      20 | Capabilities, cost guard, retry, readiness totality                                                                                                                 |
+| `PasswordResetNotifierTests`          |      16 | Reset delivery never leaks the token or throws at request time (M01-02)                                                                                             |
+| `AssetStorageTests`                   |      14 | Round-trip, hashing, path confinement                                                                                                                               |
+| `DesignProjectTests`                  |      14 | Workflow kind validation and immutability; 200-character name limit (M01-04)                                                                                        |
+| `FeatureInventoryTests`               |      14 | Coverage states, handoff gate, invariant-bypass guards                                                                                                              |
+| `ArtifactParsingTests`                |      12 | Normalization and fidelity limits                                                                                                                                   |
+| `DesignContractReferencesTests`       |       9 | AC-2.7's referential rule, and that it never throws on an unexpected shape                                                                                          |
+| `StitchEnvelopeParsingTests`          |       5 | Both CLI response shapes, failure modes                                                                                                                             |
+| `JobDispatcherLeaseTests`             |       3 | Fail-closed renewal: heartbeat loss, heartbeat throwing, shutdown (R3-001B)                                                                                         |
+| **Total**                             | **531** |                                                                                                                                                                     |
 
 ### Architecture tests — boundaries
 
@@ -115,17 +119,18 @@ These run in a second and catch a class of mistake no reviewer reliably catches.
 A throwaway database per run, migrated from empty. That means **"migrations
 apply cleanly to an empty database" is verified continuously**, not assumed.
 
-| Class                   |   Tests | Covers                                                                                                                  |
-| :---------------------- | ------: | :---------------------------------------------------------------------------------------------------------------------- |
-| `AuthenticationTests`   |      65 | Real host: session cookie, lockout, password change and reset, TOTP, antiforgery, the Production startup gates (M01-02) |
-| `AuthorizationTests`    |      61 | Organization scope, roles, cross-tenant 404s, provisioning, every tenant root filtered (M01-03)                         |
-| `DurableJobQueueTests`  |      31 | `SKIP LOCKED` concurrency, crash recovery, backoff, idempotency, lease fencing, **database-time claim**                 |
-| `ProjectEndpointsTests` |      29 | Project create/list/read: tenancy, roles, coded refusals, `kind` immutable by route table (M01-04)                      |
-| `PersistenceTests`      |      16 | Schema, round-trips, `jsonb`, **database-level approval uniqueness**                                                    |
-| `ApiEndpointTests`      |       8 | Real host over HTTP: health, providers, no credential leaks                                                             |
-| `MigrationUpgradeTests` |       7 | Upgrades from a **named prior migration**, not only from empty (M01-03)                                                 |
-| `JobDispatcherTests`    |       2 | Dispatcher against a real queue: lease loss cancels the handler, terminal failure                                       |
-| **Total**               | **219** |                                                                                                                         |
+| Class                    |   Tests | Covers                                                                                                                                                                     |
+| :----------------------- | ------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AuthenticationTests`    |      65 | Real host: session cookie, lockout, password change and reset, TOTP, antiforgery, the Production startup gates (M01-02)                                                    |
+| `AuthorizationTests`     |      61 | Organization scope, roles, cross-tenant 404s, provisioning, every tenant root filtered (M01-03)                                                                            |
+| `ContractEndpointsTests` |      49 | Contract draft/edit/discard/approve/history on every route: tenancy, roles, coded refusals, **hash audited in SQL**, **two forced races**, route-table role guard (M01-05) |
+| `DurableJobQueueTests`   |      31 | `SKIP LOCKED` concurrency, crash recovery, backoff, idempotency, lease fencing, **database-time claim**                                                                    |
+| `ProjectEndpointsTests`  |      29 | Project create/list/read: tenancy, roles, coded refusals, `kind` immutable by route table (M01-04)                                                                         |
+| `PersistenceTests`       |      16 | Schema, round-trips, `jsonb`, **database-level approval uniqueness**                                                                                                       |
+| `ApiEndpointTests`       |       8 | Real host over HTTP: health, providers, no credential leaks                                                                                                                |
+| `MigrationUpgradeTests`  |       7 | Upgrades from a **named prior migration**, not only from empty (M01-03)                                                                                                    |
+| `JobDispatcherTests`     |       2 | Dispatcher against a real queue: lease loss cancels the handler, terminal failure                                                                                          |
+| **Total**                | **268** |                                                                                                                                                                            |
 
 What needs a real database and why:
 
@@ -180,8 +185,20 @@ degraded one.
 
 ### Contract schema tests
 
-164 tests across three suites: `contracts.test.ts` (37),
-`schema-alignment.test.ts` (29), `schema-coverage.test.ts` (98).
+169 tests across four suites: `contracts.test.ts` (37),
+`schema-alignment.test.ts` (29), `schema-coverage.test.ts` (98) and
+`conformance.test.ts` (5).
+
+**`conformance.test.ts` is the one the API depends on (M01-05).** It guards
+`conformance/design-contract.cases.json` — 157 documents as raw JSON text, each
+with the verdict Ajv gives it and the `pointer keyword` pairs that fail. The test
+fails unless that file is exactly what Ajv produces for the current schema, and
+unless every validation keyword in the schema fails in at least one case. The
+.NET `SchemaConformanceTests` then holds the API's validator to the same file.
+Neither test alone proves anything about the other implementation; together
+they are why "the API and the studio enforce one contract definition" can be
+said at all (ADR-0010). Regenerate after a deliberate schema change with
+`UPDATE_CONFORMANCE=1 npm test --workspace @aids/contracts`.
 
 `contracts.test.ts` validates both JSON Schemas with Ajv against typed
 fixtures. `schema-alignment.test.ts` pins declared key lists to the TypeScript
@@ -322,42 +339,48 @@ bare name. A simplified fixture would have hidden it.
 
 ## 5. Invariants currently under test
 
-| Invariant                                              | Where                                      | Level              |
-| :----------------------------------------------------- | :----------------------------------------- | :----------------- |
-| Approved/superseded contract versions are immutable    | `DesignContractTests`                      | Unit               |
-| Exactly one approved contract version                  | `DesignContractTests` + `PersistenceTests` | Unit + **DB**      |
-| Approval records approver, timestamp, payload hash     | `DesignContractTests`                      | Unit               |
-| One draft at a time                                    | `DesignContractTests`                      | Unit               |
-| Screen approval blocked on contract drift (id or hash) | `ScreenApprovalTests`                      | Unit               |
-| A blocked approval does not change state               | `ScreenApprovalTests`                      | Unit               |
-| Exactly one approved screen version                    | `ScreenApprovalTests` + index              | Unit + **DB**      |
-| Review must pass through `InReview`                    | `ScreenApprovalTests`                      | Unit               |
-| Rejection requires a reason                            | `ScreenApprovalTests`                      | Unit               |
-| `Unaddressed` features block handoff                   | `FeatureInventoryTests`                    | Unit               |
-| Coverage requires a real screen id                     | `FeatureInventoryTests`                    | Unit               |
-| Waivers require reason **and** owner                   | `FeatureInventoryTests`                    | Unit               |
-| Job lease and crash recovery                           | `JobRecordTests` + `DurableJobQueueTests`  | Unit + **DB**      |
-| Reclaim counts as a new attempt                        | `JobRecordTests`                           | Unit               |
-| Lost claim race does not consume an attempt            | `JobRecordTests`                           | Unit               |
-| Non-retryable failures die immediately                 | both                                       | Unit + **DB**      |
-| Idempotency prevents duplicate billable work           | both                                       | Unit + **DB**      |
-| Concurrent workers take disjoint jobs                  | `DurableJobQueueTests`                     | **DB**             |
-| Storage keys cannot escape their root                  | `AssetStorageTests`                        | Unit               |
-| A screenshot yields `Visual` fidelity only             | `ArtifactParsingTests`                     | Unit               |
-| Malformed artifacts degrade, never throw               | `ArtifactParsingTests`                     | Unit               |
-| Every projection loss is reported                      | `StitchThemeProjectionTests`               | Unit               |
-| Required provider theme fields always present          | `StitchThemeProjectionTests`               | Unit               |
-| Billable operations refused when disabled              | `StitchAdapterTests`                       | Unit               |
-| Credential errors are not retried                      | `StitchAdapterTests`                       | Unit               |
-| CLI failure detected despite exit code 0               | `StitchEnvelopeParsingTests`               | Unit               |
-| Unverified capabilities are not declared               | `StitchAdapterTests` + `ApiEndpointTests`  | Unit + Integration |
-| Health output leaks no credentials                     | `ApiEndpointTests`                         | Integration        |
-| Migrations apply to an empty database                  | `DatabaseFixture`                          | **DB**             |
-| Module boundaries hold                                 | `ModuleBoundaryTests`                      | Architecture       |
-| Another tenant's project is 404, like a missing one    | `ProjectEndpointsTests`                    | **DB** + host      |
-| A project's organization comes from the membership     | `ProjectEndpointsTests`                    | **DB** + host      |
-| No endpoint accepts `kind` after creation              | `ProjectEndpointsTests` (route table)      | Host               |
-| Authoring needs Member; reading needs any membership   | `ProjectEndpointsTests`                    | **DB** + host      |
+| Invariant                                                | Where                                                     | Level              |
+| :------------------------------------------------------- | :-------------------------------------------------------- | :----------------- |
+| Approved/superseded contract versions are immutable      | `DesignContractTests`                                     | Unit               |
+| Exactly one approved contract version                    | `DesignContractTests` + `PersistenceTests`                | Unit + **DB**      |
+| Approval records approver, timestamp, payload hash       | `DesignContractTests`                                     | Unit               |
+| One draft at a time                                      | `DesignContractTests`                                     | Unit               |
+| Screen approval blocked on contract drift (id or hash)   | `ScreenApprovalTests`                                     | Unit               |
+| A blocked approval does not change state                 | `ScreenApprovalTests`                                     | Unit               |
+| Exactly one approved screen version                      | `ScreenApprovalTests` + index                             | Unit + **DB**      |
+| Review must pass through `InReview`                      | `ScreenApprovalTests`                                     | Unit               |
+| Rejection requires a reason                              | `ScreenApprovalTests`                                     | Unit               |
+| `Unaddressed` features block handoff                     | `FeatureInventoryTests`                                   | Unit               |
+| Coverage requires a real screen id                       | `FeatureInventoryTests`                                   | Unit               |
+| Waivers require reason **and** owner                     | `FeatureInventoryTests`                                   | Unit               |
+| Job lease and crash recovery                             | `JobRecordTests` + `DurableJobQueueTests`                 | Unit + **DB**      |
+| Reclaim counts as a new attempt                          | `JobRecordTests`                                          | Unit               |
+| Lost claim race does not consume an attempt              | `JobRecordTests`                                          | Unit               |
+| Non-retryable failures die immediately                   | both                                                      | Unit + **DB**      |
+| Idempotency prevents duplicate billable work             | both                                                      | Unit + **DB**      |
+| Concurrent workers take disjoint jobs                    | `DurableJobQueueTests`                                    | **DB**             |
+| Storage keys cannot escape their root                    | `AssetStorageTests`                                       | Unit               |
+| A screenshot yields `Visual` fidelity only               | `ArtifactParsingTests`                                    | Unit               |
+| Malformed artifacts degrade, never throw                 | `ArtifactParsingTests`                                    | Unit               |
+| Every projection loss is reported                        | `StitchThemeProjectionTests`                              | Unit               |
+| Required provider theme fields always present            | `StitchThemeProjectionTests`                              | Unit               |
+| Billable operations refused when disabled                | `StitchAdapterTests`                                      | Unit               |
+| Credential errors are not retried                        | `StitchAdapterTests`                                      | Unit               |
+| CLI failure detected despite exit code 0                 | `StitchEnvelopeParsingTests`                              | Unit               |
+| Unverified capabilities are not declared                 | `StitchAdapterTests` + `ApiEndpointTests`                 | Unit + Integration |
+| Health output leaks no credentials                       | `ApiEndpointTests`                                        | Integration        |
+| Migrations apply to an empty database                    | `DatabaseFixture`                                         | **DB**             |
+| Module boundaries hold                                   | `ModuleBoundaryTests`                                     | Architecture       |
+| Another tenant's project is 404, like a missing one      | `ProjectEndpointsTests`                                   | **DB** + host      |
+| A project's organization comes from the membership       | `ProjectEndpointsTests`                                   | **DB** + host      |
+| No endpoint accepts `kind` after creation                | `ProjectEndpointsTests` (route table)                     | Host               |
+| Authoring needs Member; reading needs any membership     | `ProjectEndpointsTests`                                   | **DB** + host      |
+| The API and the studio accept the same contracts         | `SchemaConformanceTests` + `conformance.test.ts`          | Unit, both sides   |
+| A contract is stored as the value that was validated     | `DesignContractPayloadValidatorTests`                     | Unit               |
+| A flow step must name a listed screen (AC-2.7)           | `ContractEndpointsTests`                                  | **DB** + host      |
+| An approved contract matches its hash, even under a race | `ContractEndpointsTests` (SQL audit, forced interleaving) | **DB** + host      |
+| Approval is the Approver's; the approver is the session  | `ContractEndpointsTests`                                  | **DB** + host      |
+| No write route lacks an organization role                | `ContractEndpointsTests` (route table)                    | Host               |
 
 ---
 
@@ -381,8 +404,8 @@ Stated rather than implied.
 
 ```bash
 # Everything
-dotnet test                                    # 509
-npm test                                       # 19 + 164
+dotnet test                                    # 824
+npm test                                       # 19 + 169
 
 # One suite
 dotnet test --project backend/tests/AIDesignStudio.UnitTests/AIDesignStudio.UnitTests.csproj

@@ -54,7 +54,9 @@ Invariants currently under test: contract and design system version
 immutability, single-approved-version (aggregate **and** database), screen
 contract-drift, feature-coverage handoff gate, job lease and retry semantics,
 idempotency, storage path confinement, artifact fidelity limits, projection
-lossiness.
+lossiness, tenant isolation of every route, schema conformance between the API's
+validator and the studio's, and an approved contract matching its hash under
+concurrent writes.
 
 ### 5. Do not claim a feature works without verification
 
@@ -105,9 +107,9 @@ Run these and paste the real output. Never report a result you did not observe.
 
 ```bash
 dotnet build                                   # warnings are errors
-dotnet test                                    # 509 tests
+dotnet test                                    # 824 tests
 dotnet format --verify-no-changes              # style gate
-npm test                                       # 19 frontend + 164 contract tests
+npm test                                       # 19 frontend + 169 contract tests
 npm run typecheck && npm run lint
 npm run format:check
 npm run build --workspace frontend
@@ -198,8 +200,8 @@ backend/src/
   AIDesignStudio.Worker            job dispatcher
   AIDesignStudio.Provisioning      aids-provision — operator provisioning CLI (ADR-0009)
 backend/tests/
-  AIDesignStudio.UnitTests         265 tests
-  AIDesignStudio.IntegrationTests  219 tests (needs PostgreSQL)
+  AIDesignStudio.UnitTests         531 tests
+  AIDesignStudio.IntegrationTests  268 tests (needs PostgreSQL)
   AIDesignStudio.ArchitectureTests  25 tests (boundary + organization-scope guards)
 frontend/                          Next.js studio
 packages/contracts/                shared JSON Schemas + TS types

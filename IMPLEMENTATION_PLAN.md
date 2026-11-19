@@ -14,9 +14,10 @@ M00 approval by itself.
 **Wave 3 is the authorized scope**, and within it **M01-03 only**. Wave 1 is
 complete and its corrections approved; **M01-02 was independently accepted on
 2026-11-03**. Work outside the authorized wave still needs authorization.
-**M01-04 was explicitly authorized on 2026-11-19 ahead of M01-03's acceptance**
-— the sequencing below still holds for everything after it, and M01-04 stays
-unmerged until M01-03 is accepted.
+**M01-04 was explicitly authorized on 2026-11-19 ahead of M01-03's acceptance,
+and M01-05 the same day on the owner's delegation** — the sequencing below still
+holds for everything after them, and both stay unmerged until what they build on
+is accepted. **M01-06 has not started.**
 No task is complete until its acceptance criteria have been executed with
 evidence. Current wave state:
 
@@ -26,7 +27,8 @@ evidence. Current wave state:
 | **M01-02**   | ✅ **APPROVED with non-blocking findings**                  | Independently accepted 2026-11-03. D-8 unresolved (pre-production gate); MFA recovery codes remain a recorded gap                                                                                                           |
 | **M01-03**   | 🔬 **Round-2 corrections applied — awaiting re-acceptance** | Three review rounds, nine findings, all corrected. W3-RR-001 accepted in round 2. **D-3 and D-9 resolved** (ADR-0009, as amended by A1–A4). Evidence: [round-2 response](docs/05-delivery/reviews/M01_WAVE3_R2_RESPONSE.md) |
 | **M01-04**   | 🔬 **Implemented, not reviewed**                            | Authorized 2026-11-19 ahead of M01-03 acceptance; branch `gosei-sy/m01-04-project-endpoints`, unmerged until M01-03 is accepted. Assumption A-16 open                                                                       |
-| M01-05, 06   | ⛔ Not started                                              | Each waits on its predecessor being accepted                                                                                                                                                                                |
+| **M01-05**   | 🔬 **Implemented, not reviewed**                            | Delegated authorization 2026-11-19; branch `gosei-sy/m01-05-contract-endpoints`, stacked on M01-04, unmerged. ADR-0010 proposed                                                                                             |
+| M01-06       | ⛔ Not started                                              | Waits on its predecessor being accepted                                                                                                                                                                                     |
 | M01-07/08/09 | ⛔ Not started                                              | Gated on M01-01 resolving **A-08** positively                                                                                                                                                                               |
 | M01-10       | ⛔ Not started                                              | Needs M01-04 … M01-09 accepted                                                                                                                                                                                              |
 | **M01-11**   | ✅ **Evidence complete — awaiting acceptance**              | **9/9 specs pass locally and in CI** (first CI run 44509571762, 2026-11-19), including the browser auth flow                                                                                                                |
@@ -282,22 +284,61 @@ removing the antiforgery filter fails one, removing the Member check fails one.
 
 **Size:** L · **Depends on:** M01-04 · **Risk:** 🟡 Medium
 
+**State:** 🔬 **implemented 2026-11-19, not reviewed, not accepted.** Started
+ahead of M01-04's acceptance — and so of M01-03's — on the repository owner's
+delegation ("take the best option"; recorded in IMPLEMENTATION_STATUS §9). On
+branch `gosei-sy/m01-05-contract-endpoints`, stacked on M01-04, unmerged.
+
 The first place the shared schemas are enforced at the boundary.
 
 **Acceptance:**
 
 - Draft create / update / approve / discard, and version history, per
-  [API_CONTRACTS.md §4](docs/02-architecture/API_CONTRACTS.md).
+  [API_CONTRACTS.md §4](docs/02-architecture/API_CONTRACTS.md). _Evidence:
+  `ContractEndpointsTests` §2–§3; the surface is now API_CONTRACTS §3c._
 - A payload failing `design-contract.schema.json` returns `400` with the
-  failing JSON pointers.
+  failing JSON pointers. _Evidence:
+  `A_payload_that_breaks_the_schema_is_400_with_the_failing_pointers_and_stores_nothing`._
 - A flow step referencing a screen key absent from `/screens` returns `422` —
-  closes AC-2.7, the referential rule JSON Schema cannot express.
-- `contract.draft_already_open` returns `409`.
-- `contract.version_immutable` returns `409`.
-- Integration tests cover each transition and each rejection.
+  closes AC-2.7, the referential rule JSON Schema cannot express. _Evidence:
+  `A_flow_step_naming_an_unlisted_screen_is_422_and_stores_nothing`._
+- `contract.draft_already_open` returns `409`. _Evidence:
+  `A_second_draft_while_one_is_open_is_409_and_the_first_is_untouched`._
+- `contract.version_immutable` returns `409`. _Evidence:
+  `Editing_an_approved_contract_is_409_version_immutable_and_changes_nothing`._
+- Integration tests cover each transition and each rejection. _Evidence: 49
+  cases in `ContractEndpointsTests`, on every route for tenancy, anonymity,
+  membership and antiforgery._
 
 **Note:** use the same JSON Schema files the frontend uses. Two copies of a
-contract definition will diverge.
+contract definition will diverge. _Done: the file is embedded, not copied. But
+the same file still means a second implementation reading it, so the API's
+validator is tested against a 157-case corpus recording **Ajv's** verdicts
+(`SchemaConformanceTests`, guarded from the other side by `conformance.test.ts`).
+The mechanism is **ADR-0010, proposed**._
+
+**Decided while implementing**, each with a test and each open to review:
+
+- **The validator is in-house** (ADR-0010). The usual library now carries a
+  fee-bearing licence for commercial use.
+- **Stricter than the schema where the store demands it:** duplicate members,
+  U+0000, unpaired surrogates and inexact numbers are 400, not a 500 at save.
+- **`jsonb` stores the value, not the bytes**, so the hash is of the stored
+  text. The schema's description said "verbatim" and has been corrected.
+- **Writes are serialized per project.** An approval racing an edit otherwise
+  leaves an approved version that disagrees with its hash.
+- **Roles are route policies with coded 403s**; a route-table test proves no
+  write route lacks one. Authoring is Member, approval is Approver (A-16).
+- **Bodies are capped at 1 MiB** — provisional; payload limits proper are M02.
+
+**Found and fixed:** the host's domain-error handler sent `application/json`,
+not `application/problem+json`. No endpoint had returned a domain refusal until
+now, so nothing had read the header.
+
+**Not done, deliberately:** duplicate screen or flow keys are accepted (no
+stated rule); two people editing one draft are serialized, not warned (needs a
+version token from the editor, M01-10); the design system schema has no
+conformance corpus yet (M01-06).
 
 ---
 

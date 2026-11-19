@@ -213,8 +213,8 @@ Then open <https://localhost:3000>.
 ## Tests
 
 ```bash
-dotnet test                 # 509: unit + architecture + integration
-npm test                    # 183: 19 frontend + 164 contract schema
+dotnet test                 # 824: unit + architecture + integration
+npm test                    # 188: 19 frontend + 169 contract schema
 ```
 
 Integration tests provision a throwaway database per run and migrate it from
@@ -307,8 +307,8 @@ backend/src/
   AIDesignStudio.Worker            durable job dispatcher
   AIDesignStudio.Provisioning      aids-provision — operator provisioning CLI (ADR-0009)
 backend/tests/
-  AIDesignStudio.UnitTests         265 tests
-  AIDesignStudio.IntegrationTests  219 tests (needs PostgreSQL)
+  AIDesignStudio.UnitTests         531 tests
+  AIDesignStudio.IntegrationTests  268 tests (needs PostgreSQL)
   AIDesignStudio.ArchitectureTests  25 tests (boundary + organization-scope guards)
 frontend/                          Next.js studio
 packages/contracts/                shared JSON Schemas + TypeScript types
