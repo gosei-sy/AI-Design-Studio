@@ -174,7 +174,12 @@ jobs:
         working-directory: frontend
 
       - name: Apply migrations
+        # dotnet-ef reads project metadata before it builds, and that needs
+        # obj/project.assets.json. This job has no Restore step of its own (the
+        # backend job does), so on a clean checkout it failed with NETSDK1004 —
+        # the first time CI ever ran, 2026-11-19.
         run: |
+          dotnet restore
           dotnet tool install --global dotnet-ef --version 10.*
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet-ef database update \
