@@ -19,6 +19,17 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      The schema the studio validates against, embedded rather than copied: one
+      file, so the API and the UI cannot hold two definitions of a contract
+      (M01-05, AC-2.6).
+    -->
+    <EmbeddedResource Include="..\..\..\packages\contracts\schemas\design-contract.schema.json"
+                      Link="Schemas\design-contract.schema.json"
+                      LogicalName="AIDesignStudio.Schemas.design-contract.schema.json" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aidesignstudio.dev/schemas/design-contract-v1.json",
   "title": "Design Contract v1",
-  "description": "The normative description of what a product must contain. This document, once approved, is the system's source of truth. AI provider output is evidence that a contract was satisfied; it is never itself the contract. The backend stores this payload verbatim and hashes it at approval, so this schema is the single definition of its shape for both the API and the studio UI.",
+  "description": "The normative description of what a product must contain. This document, once approved, is the system's source of truth. AI provider output is evidence that a contract was satisfied; it is never itself the contract. The backend stores this payload as jsonb — the same JSON value, not the same bytes — and hashes the stored text at approval. This schema is the single definition of its shape for both the API and the studio UI.",
   "type": "object",
   "required": ["schemaVersion", "product", "informationArchitecture", "screens"],
   "additionalProperties": false,

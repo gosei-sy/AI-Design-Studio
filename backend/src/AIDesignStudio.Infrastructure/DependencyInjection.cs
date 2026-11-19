@@ -1,4 +1,5 @@
 using AIDesignStudio.Application.Artifacts;
+using AIDesignStudio.Application.DesignContracts;
 using AIDesignStudio.Application.Jobs;
 using AIDesignStudio.Application.Organizations;
 using AIDesignStudio.Application.Providers;
@@ -10,6 +11,7 @@ using AIDesignStudio.Infrastructure.Organizations;
 using AIDesignStudio.Infrastructure.Persistence;
 using AIDesignStudio.Infrastructure.Providers;
 using AIDesignStudio.Infrastructure.Providers.Stitch;
+using AIDesignStudio.Infrastructure.Schemas;
 using AIDesignStudio.Infrastructure.Storage;
 using AIDesignStudio.SharedKernel;
 using Microsoft.EntityFrameworkCore;
@@ -119,6 +121,11 @@ public static class DependencyInjection
 
         // --- Durable jobs -----------------------------------------------------
         services.AddScoped<IJobQueue, PostgresJobQueue>();
+
+        // --- Payload validation -----------------------------------------------
+        // Stateless; the compiled schema is held statically, so one instance
+        // serves every request.
+        services.AddSingleton<IDesignContractPayloadValidator, DesignContractPayloadValidator>();
 
         // --- Artifact parsing -------------------------------------------------
         services.AddSingleton<IDesignArtifactParser, HtmlDesignArtifactParser>();

@@ -1,0 +1,959 @@
+{
+  "schema": "design-contract.schema.json",
+  "regenerate": "UPDATE_CONFORMANCE=1 npm test --workspace @aids/contracts",
+  "cases": [
+    {
+      "name": "valid: minimal",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: every optional section",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme Storefront\",\"summary\":\"Sells things.\\nOn two lines, with ünïcödé.\",\"platforms\":[\"web\",\"mobile\",\"tablet\"],\"primaryAudience\":\"Shoppers\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\",\"note\":\"Entry point\"},{\"screenKey\":\"checkout/payment\"}]},{\"key\":\"browse\",\"name\":\"Browse\",\"steps\":[{\"screenKey\":\"home\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items before paying.\",\"requiredElements\":[\"Line items\",\"Total\"],\"states\":[\"default\",\"empty\",\"loading\",\"error\",\"success\",\"offline\"],\"devices\":[\"mobile\",\"desktop\",\"tablet\",\"agnostic\"]},{\"key\":\"checkout/payment\",\"title\":\"Payment\",\"purpose\":\"Pay.\"},{\"key\":\"home\",\"title\":\"Home\",\"purpose\":\"Start.\"}],\"accessibility\":{\"conformanceTarget\":\"WCAG22AA\",\"notes\":\"Keyboard first.\"},\"contentRules\":{\"tone\":\"Plain\",\"readingLevel\":\"Grade 8\",\"prohibited\":[\"Jargon\"]},\"assumptions\":[{\"statement\":\"Users pay by card.\",\"confidence\":\"medium\",\"validationPlan\":\"Ask five.\"},{\"statement\":\"No guest checkout.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: schemaVersion spelled 1.0",
+      "json": "{\"schemaVersion\":1.0,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: schemaVersion spelled 1e0",
+      "json": "{\"schemaVersion\":1e0,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: schemaVersion spelled 10e-1",
+      "json": "{\"schemaVersion\":10e-1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: insignificant whitespace",
+      "json": "{\n    \"schemaVersion\": 1,\n    \"product\": {\n        \"name\": \"Acme\",\n        \"platforms\": [\n            \"web\"\n        ]\n    },\n    \"informationArchitecture\": {\n        \"flows\": [\n            {\n                \"key\": \"checkout\",\n                \"name\": \"Checkout\",\n                \"steps\": [\n                    {\n                        \"screenKey\": \"cart\"\n                    }\n                ]\n            }\n        ]\n    },\n    \"screens\": [\n        {\n            \"key\": \"cart\",\n            \"title\": \"Cart\",\n            \"purpose\": \"Review items.\"\n        }\n    ]\n}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key a",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"a\"}]}]},\"screens\":[{\"key\":\"a\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key 0",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"0\"}]}]},\"screens\":[{\"key\":\"0\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key a-b",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"a-b\"}]}]},\"screens\":[{\"key\":\"a-b\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key a/b",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"a/b\"}]}]},\"screens\":[{\"key\":\"a/b\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key a-b/c-d",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"a-b/c-d\"}]}]},\"screens\":[{\"key\":\"a-b/c-d\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key a1/b2-c3",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"a1/b2-c3\"}]}]},\"screens\":[{\"key\":\"a1/b2-c3\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key settings/billing/invoices",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"settings/billing/invoices\"}]}]},\"screens\":[{\"key\":\"settings/billing/invoices\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: stable key of 128 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: product name of 200 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: product name of 200 astral characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: purpose of 1000 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: summary of 2000 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"],\"summary\":\"ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: empty optional arrays",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"requiredElements\":[],\"states\":[],\"devices\":[]}],\"contentRules\":{\"prohibited\":[]},\"assumptions\":[]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: empty optional objects",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"accessibility\":{},\"contentRules\":{}}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: prohibited entry may be empty",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":{\"prohibited\":[\"\"]}}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid: duplicate required elements are allowed",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"requiredElements\":[\"Total\",\"Total\"]}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid for the schema: a flow step names an unlisted screen",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"nowhere\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "valid for the schema: two screens share a key",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"},{\"key\":\"cart\",\"title\":\"Cart again\",\"purpose\":\"Duplicate.\"}]}",
+      "valid": true,
+      "failures": []
+    },
+    {
+      "name": "root: an array",
+      "json": "[]",
+      "valid": false,
+      "failures": [" type"]
+    },
+    {
+      "name": "root: a string",
+      "json": "\"contract\"",
+      "valid": false,
+      "failures": [" type"]
+    },
+    {
+      "name": "root: a number",
+      "json": "1",
+      "valid": false,
+      "failures": [" type"]
+    },
+    {
+      "name": "root: null",
+      "json": "null",
+      "valid": false,
+      "failures": [" type"]
+    },
+    {
+      "name": "root: true",
+      "json": "true",
+      "valid": false,
+      "failures": [" type"]
+    },
+    {
+      "name": "root: an empty object",
+      "json": "{}",
+      "valid": false,
+      "failures": [" required"]
+    },
+    {
+      "name": "root: missing schemaVersion",
+      "json": "{\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": [" required"]
+    },
+    {
+      "name": "root: missing product",
+      "json": "{\"schemaVersion\":1,\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": [" required"]
+    },
+    {
+      "name": "root: missing informationArchitecture",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": [" required"]
+    },
+    {
+      "name": "root: missing screens",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]}}",
+      "valid": false,
+      "failures": [" required"]
+    },
+    {
+      "name": "root: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"extra\":true}",
+      "valid": false,
+      "failures": [" additionalProperties"]
+    },
+    {
+      "name": "root: two unknown properties",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"extra\":true,\"another\":1}",
+      "valid": false,
+      "failures": [" additionalProperties"]
+    },
+    {
+      "name": "schemaVersion: 2",
+      "json": "{\"schemaVersion\":2,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: 0",
+      "json": "{\"schemaVersion\":0,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: 1.5",
+      "json": "{\"schemaVersion\":1.5,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: -1",
+      "json": "{\"schemaVersion\":-1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: the string \"1\"",
+      "json": "{\"schemaVersion\":\"1\",\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: null",
+      "json": "{\"schemaVersion\":null,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: true",
+      "json": "{\"schemaVersion\":true,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: an array",
+      "json": "{\"schemaVersion\":[1],\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "schemaVersion: an object",
+      "json": "{\"schemaVersion\":{\"version\":1},\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/schemaVersion const"]
+    },
+    {
+      "name": "product: an array",
+      "json": "{\"schemaVersion\":1,\"product\":[],\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product type"]
+    },
+    {
+      "name": "product: a string",
+      "json": "{\"schemaVersion\":1,\"product\":\"Acme\",\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product type"]
+    },
+    {
+      "name": "product: missing name",
+      "json": "{\"schemaVersion\":1,\"product\":{\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product required"]
+    },
+    {
+      "name": "product: missing platforms",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product required"]
+    },
+    {
+      "name": "product: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"],\"owner\":\"me\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product additionalProperties"]
+    },
+    {
+      "name": "product: empty name",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/name minLength"]
+    },
+    {
+      "name": "product: name of 201 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/name maxLength"]
+    },
+    {
+      "name": "product: name of 201 astral characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/name maxLength"]
+    },
+    {
+      "name": "product: name is a number",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":7,\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/name type"]
+    },
+    {
+      "name": "product: name is null",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":null,\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/name type"]
+    },
+    {
+      "name": "product: summary of 2001 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"],\"summary\":\"sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/summary maxLength"]
+    },
+    {
+      "name": "product: summary is a number",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"],\"summary\":1},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/summary type"]
+    },
+    {
+      "name": "product: primaryAudience of 501 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"],\"primaryAudience\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/primaryAudience maxLength"]
+    },
+    {
+      "name": "product: no platforms",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/platforms minItems"]
+    },
+    {
+      "name": "product: a platform listed twice",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\",\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/platforms uniqueItems"]
+    },
+    {
+      "name": "product: an unknown platform",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"desktop\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/platforms/0 enum"]
+    },
+    {
+      "name": "product: a platform in another case",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"Web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/platforms/0 enum"]
+    },
+    {
+      "name": "product: a numeric platform",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[1]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/platforms/0 enum"]
+    },
+    {
+      "name": "product: platforms is a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":\"web\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/platforms type"]
+    },
+    {
+      "name": "product: platforms is an object",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":{\"web\":true}},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/product/platforms type"]
+    },
+    {
+      "name": "architecture: a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":\"flows\",\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture type"]
+    },
+    {
+      "name": "architecture: missing flows",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture required"]
+    },
+    {
+      "name": "architecture: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}],\"sitemap\":[]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture additionalProperties"]
+    },
+    {
+      "name": "architecture: no flows",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows minItems"]
+    },
+    {
+      "name": "architecture: flows is an object",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":{}},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows type"]
+    },
+    {
+      "name": "flow: a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[\"checkout\"]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0 type"]
+    },
+    {
+      "name": "flow: missing key",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0 required"]
+    },
+    {
+      "name": "flow: missing name",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0 required"]
+    },
+    {
+      "name": "flow: missing steps",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\"}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0 required"]
+    },
+    {
+      "name": "flow: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}],\"owner\":\"x\"}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0 additionalProperties"]
+    },
+    {
+      "name": "flow: empty name",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/name minLength"]
+    },
+    {
+      "name": "flow: name of 201 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/name maxLength"]
+    },
+    {
+      "name": "flow: no steps",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps minItems"]
+    },
+    {
+      "name": "flow: steps is a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":\"cart\"}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps type"]
+    },
+    {
+      "name": "step: a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[\"cart\"]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps/0 type"]
+    },
+    {
+      "name": "step: missing screenKey",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps/0 required"]
+    },
+    {
+      "name": "step: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\",\"order\":1}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps/0 additionalProperties"]
+    },
+    {
+      "name": "step: note of 501 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\",\"note\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps/0/note maxLength"]
+    },
+    {
+      "name": "step: screenKey is a number",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":1}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps/0/screenKey type"]
+    },
+    {
+      "name": "second flow: second step is wrong",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme Storefront\",\"summary\":\"Sells things.\\nOn two lines, with ünïcödé.\",\"platforms\":[\"web\",\"mobile\",\"tablet\"],\"primaryAudience\":\"Shoppers\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\",\"note\":\"Entry point\"},{\"screenKey\":\"checkout/payment\"}]},{\"key\":\"browse\",\"name\":\"Browse\",\"steps\":[{\"screenKey\":\"home\"},{\"screenKey\":\"Bad Key\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items before paying.\",\"requiredElements\":[\"Line items\",\"Total\"],\"states\":[\"default\",\"empty\",\"loading\",\"error\",\"success\",\"offline\"],\"devices\":[\"mobile\",\"desktop\",\"tablet\",\"agnostic\"]},{\"key\":\"checkout/payment\",\"title\":\"Payment\",\"purpose\":\"Pay.\"},{\"key\":\"home\",\"title\":\"Home\",\"purpose\":\"Start.\"}],\"accessibility\":{\"conformanceTarget\":\"WCAG22AA\",\"notes\":\"Keyboard first.\"},\"contentRules\":{\"tone\":\"Plain\",\"readingLevel\":\"Grade 8\",\"prohibited\":[\"Jargon\"]},\"assumptions\":[{\"statement\":\"Users pay by card.\",\"confidence\":\"medium\",\"validationPlan\":\"Ask five.\"},{\"statement\":\"No guest checkout.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/1/steps/1/screenKey pattern"]
+    },
+    {
+      "name": "screen key: empty",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key minLength", "/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: uppercase",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"Cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a space",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"my cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: an underscore",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"my_cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a leading hyphen",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"-cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a trailing hyphen",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart-\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a doubled hyphen",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"my--cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a leading slash",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"/cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a trailing slash",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart/\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a doubled slash",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"shop//cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a hyphen beside a slash",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"shop-/cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a dot",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart.v2\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a trailing newline",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\\n\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a leading newline",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"\\ncart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: an embedded newline",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"my\\ncart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a trailing carriage return",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\\r\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a trailing space",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart \",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: an Arabic-Indic digit",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart٣\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a full-width letter",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"ｃart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: an accented letter",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"café\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: a Cyrillic look-alike",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"сart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: an emoji",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart😀\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key pattern"]
+    },
+    {
+      "name": "screen key: 129 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key maxLength"]
+    },
+    {
+      "name": "flow key: uppercase",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"Checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/key pattern"]
+    },
+    {
+      "name": "flow key: a trailing newline",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\\n\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/key pattern"]
+    },
+    {
+      "name": "step screenKey: uppercase",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"Cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/informationArchitecture/flows/0/steps/0/screenKey pattern"]
+    },
+    {
+      "name": "screen key: a number",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":5,\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key type"]
+    },
+    {
+      "name": "screen key: null",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":null,\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/key type"]
+    },
+    {
+      "name": "screens: none",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[]}",
+      "valid": false,
+      "failures": ["/screens minItems"]
+    },
+    {
+      "name": "screens: an object",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":{\"cart\":{}}}",
+      "valid": false,
+      "failures": ["/screens type"]
+    },
+    {
+      "name": "screens: a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":\"cart\"}",
+      "valid": false,
+      "failures": ["/screens type"]
+    },
+    {
+      "name": "screen: a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[\"cart\"]}",
+      "valid": false,
+      "failures": ["/screens/0 type"]
+    },
+    {
+      "name": "screen: null",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[null]}",
+      "valid": false,
+      "failures": ["/screens/0 type"]
+    },
+    {
+      "name": "screen: missing key",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"title\":\"Cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0 required"]
+    },
+    {
+      "name": "screen: missing title",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0 required"]
+    },
+    {
+      "name": "screen: missing purpose",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\"}]}",
+      "valid": false,
+      "failures": ["/screens/0 required"]
+    },
+    {
+      "name": "screen: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"route\":\"/cart\"}]}",
+      "valid": false,
+      "failures": ["/screens/0 additionalProperties"]
+    },
+    {
+      "name": "screen: empty title",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/title minLength"]
+    },
+    {
+      "name": "screen: title of 201 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\",\"purpose\":\"Review items.\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/title maxLength"]
+    },
+    {
+      "name": "screen: empty purpose",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/purpose minLength"]
+    },
+    {
+      "name": "screen: purpose of 1001 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/purpose maxLength"]
+    },
+    {
+      "name": "screen: an empty required element",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"requiredElements\":[\"\"]}]}",
+      "valid": false,
+      "failures": ["/screens/0/requiredElements/0 minLength"]
+    },
+    {
+      "name": "screen: a required element of 201 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"requiredElements\":[\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"]}]}",
+      "valid": false,
+      "failures": ["/screens/0/requiredElements/0 maxLength"]
+    },
+    {
+      "name": "screen: a numeric required element",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"requiredElements\":[1]}]}",
+      "valid": false,
+      "failures": ["/screens/0/requiredElements/0 type"]
+    },
+    {
+      "name": "screen: requiredElements is a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"requiredElements\":\"Total\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/requiredElements type"]
+    },
+    {
+      "name": "screen: a state listed twice",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"states\":[\"empty\",\"empty\"]}]}",
+      "valid": false,
+      "failures": ["/screens/0/states uniqueItems"]
+    },
+    {
+      "name": "screen: an unknown state",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"states\":[\"hover\"]}]}",
+      "valid": false,
+      "failures": ["/screens/0/states/0 enum"]
+    },
+    {
+      "name": "screen: states is a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"states\":\"default\"}]}",
+      "valid": false,
+      "failures": ["/screens/0/states type"]
+    },
+    {
+      "name": "screen: a device listed twice",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"devices\":[\"mobile\",\"mobile\"]}]}",
+      "valid": false,
+      "failures": ["/screens/0/devices uniqueItems"]
+    },
+    {
+      "name": "screen: an unknown device",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"devices\":[\"phone\"]}]}",
+      "valid": false,
+      "failures": ["/screens/0/devices/0 enum"]
+    },
+    {
+      "name": "third screen: missing title",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme Storefront\",\"summary\":\"Sells things.\\nOn two lines, with ünïcödé.\",\"platforms\":[\"web\",\"mobile\",\"tablet\"],\"primaryAudience\":\"Shoppers\"},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\",\"note\":\"Entry point\"},{\"screenKey\":\"checkout/payment\"}]},{\"key\":\"browse\",\"name\":\"Browse\",\"steps\":[{\"screenKey\":\"home\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items before paying.\",\"requiredElements\":[\"Line items\",\"Total\"],\"states\":[\"default\",\"empty\",\"loading\",\"error\",\"success\",\"offline\"],\"devices\":[\"mobile\",\"desktop\",\"tablet\",\"agnostic\"]},{\"key\":\"checkout/payment\",\"title\":\"Payment\",\"purpose\":\"Pay.\"},{\"key\":\"home\",\"purpose\":\"Start.\"}],\"accessibility\":{\"conformanceTarget\":\"WCAG22AA\",\"notes\":\"Keyboard first.\"},\"contentRules\":{\"tone\":\"Plain\",\"readingLevel\":\"Grade 8\",\"prohibited\":[\"Jargon\"]},\"assumptions\":[{\"statement\":\"Users pay by card.\",\"confidence\":\"medium\",\"validationPlan\":\"Ask five.\"},{\"statement\":\"No guest checkout.\"}]}",
+      "valid": false,
+      "failures": ["/screens/2 required"]
+    },
+    {
+      "name": "accessibility: a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"accessibility\":\"AA\"}",
+      "valid": false,
+      "failures": ["/accessibility type"]
+    },
+    {
+      "name": "accessibility: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"accessibility\":{\"level\":\"AA\"}}",
+      "valid": false,
+      "failures": ["/accessibility additionalProperties"]
+    },
+    {
+      "name": "accessibility: an unknown conformance target",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"accessibility\":{\"conformanceTarget\":\"WCAG20AA\"}}",
+      "valid": false,
+      "failures": ["/accessibility/conformanceTarget enum"]
+    },
+    {
+      "name": "accessibility: notes of 2001 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"accessibility\":{\"notes\":\"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\"}}",
+      "valid": false,
+      "failures": ["/accessibility/notes maxLength"]
+    },
+    {
+      "name": "contentRules: an array",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":[]}",
+      "valid": false,
+      "failures": ["/contentRules type"]
+    },
+    {
+      "name": "contentRules: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":{\"voice\":\"x\"}}",
+      "valid": false,
+      "failures": ["/contentRules additionalProperties"]
+    },
+    {
+      "name": "contentRules: tone of 501 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":{\"tone\":\"ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\"}}",
+      "valid": false,
+      "failures": ["/contentRules/tone maxLength"]
+    },
+    {
+      "name": "contentRules: readingLevel of 101 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":{\"readingLevel\":\"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr\"}}",
+      "valid": false,
+      "failures": ["/contentRules/readingLevel maxLength"]
+    },
+    {
+      "name": "contentRules: a prohibited entry of 201 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":{\"prohibited\":[\"ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp\"]}}",
+      "valid": false,
+      "failures": ["/contentRules/prohibited/0 maxLength"]
+    },
+    {
+      "name": "contentRules: a numeric prohibited entry",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":{\"prohibited\":[1]}}",
+      "valid": false,
+      "failures": ["/contentRules/prohibited/0 type"]
+    },
+    {
+      "name": "contentRules: prohibited is a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"contentRules\":{\"prohibited\":\"x\"}}",
+      "valid": false,
+      "failures": ["/contentRules/prohibited type"]
+    },
+    {
+      "name": "assumptions: an object",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":{}}",
+      "valid": false,
+      "failures": ["/assumptions type"]
+    },
+    {
+      "name": "assumption: a string",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":[\"Users pay by card.\"]}",
+      "valid": false,
+      "failures": ["/assumptions/0 type"]
+    },
+    {
+      "name": "assumption: missing statement",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":[{\"confidence\":\"low\"}]}",
+      "valid": false,
+      "failures": ["/assumptions/0 required"]
+    },
+    {
+      "name": "assumption: empty statement",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":[{\"statement\":\"\"}]}",
+      "valid": false,
+      "failures": ["/assumptions/0/statement minLength"]
+    },
+    {
+      "name": "assumption: statement of 1001 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":[{\"statement\":\"sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss\"}]}",
+      "valid": false,
+      "failures": ["/assumptions/0/statement maxLength"]
+    },
+    {
+      "name": "assumption: an unknown confidence",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":[{\"statement\":\"x\",\"confidence\":\"certain\"}]}",
+      "valid": false,
+      "failures": ["/assumptions/0/confidence enum"]
+    },
+    {
+      "name": "assumption: validationPlan of 1001 characters",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":[{\"statement\":\"x\",\"validationPlan\":\"vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\"}]}",
+      "valid": false,
+      "failures": ["/assumptions/0/validationPlan maxLength"]
+    },
+    {
+      "name": "assumption: unknown property",
+      "json": "{\"schemaVersion\":1,\"product\":{\"name\":\"Acme\",\"platforms\":[\"web\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\"}],\"assumptions\":[{\"statement\":\"x\",\"owner\":\"me\"}]}",
+      "valid": false,
+      "failures": ["/assumptions/0 additionalProperties"]
+    },
+    {
+      "name": "several: one failure in each section",
+      "json": "{\"schemaVersion\":2,\"product\":{\"name\":\"\",\"platforms\":[\"web\",\"web\",\"desktop\"]},\"informationArchitecture\":{\"flows\":[{\"key\":\"Bad Key\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":[{\"key\":\"cart\",\"title\":\"Cart\",\"purpose\":\"Review items.\",\"states\":[\"hover\",\"hover\"]}],\"accessibility\":{\"conformanceTarget\":\"none\",\"extra\":1}}",
+      "valid": false,
+      "failures": [
+        "/accessibility additionalProperties",
+        "/accessibility/conformanceTarget enum",
+        "/informationArchitecture/flows/0/key pattern",
+        "/product/name minLength",
+        "/product/platforms uniqueItems",
+        "/product/platforms/2 enum",
+        "/schemaVersion const",
+        "/screens/0/states uniqueItems",
+        "/screens/0/states/0 enum",
+        "/screens/0/states/1 enum"
+      ]
+    },
+    {
+      "name": "several: a type error hides nothing beside it",
+      "json": "{\"schemaVersion\":1,\"product\":5,\"informationArchitecture\":{\"flows\":[{\"key\":\"checkout\",\"name\":\"Checkout\",\"steps\":[{\"screenKey\":\"cart\"}]}]},\"screens\":\"none\",\"extra\":null}",
+      "valid": false,
+      "failures": [" additionalProperties", "/product type", "/screens type"]
+    }
+  ]
+}

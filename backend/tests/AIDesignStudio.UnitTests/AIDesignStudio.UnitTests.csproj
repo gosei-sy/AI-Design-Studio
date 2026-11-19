@@ -16,6 +16,16 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+  <ItemGroup>
+    <!--
+      The corpus Ajv's verdicts are recorded in, shared with packages/contracts.
+      Linked, not copied: SchemaConformanceTests must read the file the contracts
+      package guards (M01-05).
+    -->
+    <EmbeddedResource Include="..\..\..\packages\contracts\conformance\design-contract.cases.json"
+                      Link="Conformance\design-contract.cases.json"
+                      LogicalName="Conformance.design-contract.cases.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AIDesignStudio.Application\AIDesignStudio.Application.csproj" />
