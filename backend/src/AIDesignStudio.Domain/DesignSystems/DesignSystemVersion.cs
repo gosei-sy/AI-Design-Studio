@@ -42,9 +42,12 @@ public sealed class DesignSystem : AggregateRoot
     /// <c>JobRecord</c> have had since M00: both store <c>OrganizationId</c>
     /// alongside <c>ProjectId</c>.</para>
     ///
-    /// <para>Safe to denormalize because a project's organization is immutable —
-    /// <c>DesignProject</c> exposes no way to move one between tenants — so the
-    /// two values cannot drift.</para>
+    /// <para>The database, not this property, holds the key to its project:
+    /// <c>fk_design_systems_project_tenant</c> references
+    /// <c>projects (organization_id, id)</c>, so a row whose key disagrees with its
+    /// project's cannot be written (W3-RR-001, ADR-0009 A3.1). A project's
+    /// organization being immutable keeps a valid pair valid; it never stopped an
+    /// invalid pair being created, which is what this comment used to claim.</para>
     /// </summary>
     public Guid OrganizationId { get; private set; }
 
