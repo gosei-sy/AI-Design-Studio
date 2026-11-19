@@ -30,8 +30,11 @@ export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace
  */
 const SERVER_API_ORIGIN = (process.env.API_ORIGIN ?? "http://localhost:5080").replace(/\/+$/, "");
 
+/** True while rendering on the server, where there is no `window`. */
+const isServer = () => typeof window === "undefined";
+
 /** The base for this execution context: proxy path in the browser, origin on the server. */
-const baseFor = (): string => (typeof window === "undefined" ? SERVER_API_ORIGIN : API_BASE_URL);
+const baseFor = (): string => (isServer() ? SERVER_API_ORIGIN : API_BASE_URL);
 
 /**
  * Raised when the API responds but not successfully. Carries the status so
@@ -71,15 +74,39 @@ interface RequestOptions {
   /** Forwarded to fetch's cache option. Defaults to no-store: these are diagnostics. */
   cache?: RequestCache;
   signal?: AbortSignal;
+
+  /**
+   * **Server-side only.** The incoming request's `Cookie` header, so a server
+   * component calls the API as the visitor rather than anonymously.
+   *
+   * The browser's own requests need nothing here: they go through the
+   * same-origin proxy and the session travels with them. A server render has no
+   * cookie jar, so without this every server-side call was anonymous and the
+   * status page told signed-in visitors to sign in. Ignored in the browser,
+   * where fetch forbids setting the header anyway.
+   *
+   * It is only ever sent to `SERVER_API_ORIGIN`, which comes from server
+   * configuration rather than from the request.
+   */
+  cookie?: string;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   let response: Response;
 
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const forwardsSession = isServer() && !!options.cookie;
+
+  if (forwardsSession) {
+    headers.Cookie = options.cookie!;
+  }
+
   try {
     response = await fetch(`${baseFor()}${path}`, {
-      headers: { Accept: "application/json" },
-      cache: options.cache ?? "no-store",
+      headers,
+      // A response fetched with a visitor's session belongs to that visitor;
+      // letting the fetch cache keep it would serve it to the next one.
+      cache: forwardsSession ? "no-store" : (options.cache ?? "no-store"),
       signal: options.signal,
 
       // Same-origin by default (the proxy in next.config.ts), so "same-origin"

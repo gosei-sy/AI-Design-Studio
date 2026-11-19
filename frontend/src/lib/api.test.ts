@@ -123,6 +123,20 @@ describe("api client", () => {
     expect(error.cause).toBeInstanceOf(TypeError);
   });
 
+  /**
+   * In the browser the session travels by itself on the same-origin request.
+   * Setting a Cookie header there is forbidden by fetch and would only mask a
+   * broken proxy, so the option is a server-side concern only.
+   */
+  it("does not set a Cookie header in the browser", async () => {
+    const fetchMock = mockFetch(async () => jsonResponse([]));
+
+    await listProviders({ cookie: "__Host-aids.session=abc" });
+
+    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(new Headers(init.headers).has("cookie")).toBe(false);
+  });
+
   it("normalises a base url with a trailing slash", () => {
     expect(API_BASE_URL.endsWith("/")).toBe(false);
   });

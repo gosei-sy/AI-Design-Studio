@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { Suspense } from "react";
 
 import { SystemStatusPanel, type SystemStatus } from "@/components/system-status";
@@ -26,11 +27,16 @@ async function loadStatus(): Promise<SystemStatus> {
     error = cause instanceof Error ? cause.message : String(cause);
   }
 
+  // This render runs on the server, which has no cookie jar of its own. Forward
+  // the visitor's Cookie header so the provider calls are made as them; without
+  // it a signed-in visitor was told to sign in (found by screenshot, 2026-11-19).
+  const cookie = (await headers()).get("cookie") ?? undefined;
+
   try {
-    const providers = await listProviders();
+    const providers = await listProviders({ cookie });
 
     const providerReadiness = await Promise.all(
-      providers.map((p) => getProviderReadiness(p.providerId)),
+      providers.map((p) => getProviderReadiness(p.providerId, { cookie })),
     );
 
     return { readiness, providers, providerReadiness, error };

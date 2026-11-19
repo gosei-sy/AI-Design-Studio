@@ -71,6 +71,41 @@ test.describe("system status page", () => {
     await expect(providers).not.toContainText('"status": 401');
   });
 
+  /**
+   * The other half of the test above. The page is rendered on the server, which
+   * calls the API on the visitor's behalf — and until 2026-11-19 it did so
+   * without their session, so a signed-in visitor was told to sign in. The
+   * anonymous test could not notice: it passes whether or not the session is
+   * forwarded.
+   */
+  test("shows provider status to a signed-in visitor", async ({ page }) => {
+    await page.goto("/");
+
+    const api = page.request;
+    const token = async () =>
+      (await (await api.get("/api/v1/auth/antiforgery-token")).json()).token as string;
+    const email = `status-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.test`;
+    const password = "Correct-Horse-9-Battery!";
+
+    const register = await api.post("/api/v1/auth/register", {
+      headers: { "X-CSRF-TOKEN": await token() },
+      data: { email, password },
+    });
+    expect(register.status()).toBe(202);
+
+    const login = await api.post("/api/v1/auth/login", {
+      headers: { "X-CSRF-TOKEN": await token() },
+      data: { email, password },
+    });
+    expect(login.status()).toBe(200);
+
+    await page.reload();
+
+    const providers = page.getByRole("region", { name: "AI providers" });
+    await expect(providers).toContainText("google-stitch", { timeout: 30_000 });
+    await expect(providers).not.toContainText(/Sign in to view provider status/i);
+  });
+
   test("never renders a credential value", async ({ page }) => {
     await page.goto("/");
 
