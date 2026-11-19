@@ -186,7 +186,7 @@ rule per property.
 run; removing one from TypeScript fails `tsc` with
 `Type 'true' is not assignable to type 'never'`.
 
-### End-to-end — ✅ executed locally, CI run outstanding
+### End-to-end — ✅ executed locally and in CI
 
 **9 Playwright specs, 9 passing** (2026-11-19), run against both real services
 with the studio over HTTPS proxying the API. `frontend/e2e/status.spec.ts` (6) and
@@ -198,9 +198,13 @@ matching the lockfile and the suite has run since; see the § above for why the
 browser specs exist at all. The browser install must use the **workspace**
 Playwright binary, not `npx`, or it fetches a build the test run cannot find.
 
-**Still outstanding for M01-11 acceptance:** the **CI** run. Passing locally is
-not the acceptance criterion, and the specs are counted separately from the 655
-because they need two running processes.
+**CI, 2026-11-19:** the first CI run of the repository,
+[44509571762](https://github.com/gosei-sy/AI-Design-Studio/actions/runs/44509571762),
+passed all three jobs — backend `total: 477 … skipped: 0` against the
+`postgres:17-alpine` service, frontend 19 + 164, and the e2e job `9 passed`. It
+ran on a branch via `workflow_dispatch`, not on `main`. M01-11 now has its
+evidence and **awaits acceptance**. The specs stay counted separately from the
+660 because they need two running processes.
 
 ---
 

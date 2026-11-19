@@ -117,11 +117,11 @@ when 57 skipped.
 
 ### Known environment gaps
 
-| Gap                                | Consequence                                                                                                 |
-| :--------------------------------- | :---------------------------------------------------------------------------------------------------------- |
-| Docker may be unavailable          | `docker-compose.yml` is **unverified**. Install PostgreSQL natively instead.                                |
-| No Stitch credentials              | Live generation unverifiable. See SPIKE-02 for the test plan.                                               |
-| Playwright E2E needs both services | **9/9 pass locally** (M01-11); the CI run is still outstanding. Needs the API and the HTTPS studio running. |
+| Gap                                | Consequence                                                                                           |
+| :--------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| Docker may be unavailable          | `docker-compose.yml` is **unverified**. Install PostgreSQL natively instead.                          |
+| No Stitch credentials              | Live generation unverifiable. See SPIKE-02 for the test plan.                                         |
+| Playwright E2E needs both services | **9/9 pass locally and in CI** (M01-11, run 44509571762). Needs the API and the HTTPS studio running. |
 
 Report a gap; do not paper over it.
 

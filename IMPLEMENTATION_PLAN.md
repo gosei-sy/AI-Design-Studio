@@ -86,9 +86,9 @@ closure. Approval of M00 did not close them; each is owned by an M01 task.
 
 **As at M00 closure** the E2E specs and `docker-compose.yml` were written but
 unverified, and neither was counted toward the 436. That is a historical
-snapshot, not the current state: the E2E suite now passes **7/7 locally**
-(M01-11, with only the CI run outstanding), while `docker-compose.yml` is still
-unexecuted because Docker is absent (M01-12).
+snapshot, not the current state: the E2E suite now passes **9/9 locally and in
+CI** (M01-11 — first CI run 2026-11-19, awaiting acceptance), while
+`docker-compose.yml` is still unexecuted because Docker is absent (M01-12).
 
 ---
 
@@ -387,9 +387,20 @@ running processes.
 **Acceptance:**
 
 - `npm run test:e2e --workspace frontend` runs green locally and in CI.
-- The CI `e2e` job passes with real output, not a skip.
-- TEST_STRATEGY's "⚠ unverified" note on E2E is removed. ✅ _(done — that
-  section now records 7/7 locally with the CI run outstanding)_
+  _Evidence, 2026-11-19: 9/9 locally; CI run
+  [44509571762](https://github.com/gosei-sy/AI-Design-Studio/actions/runs/44509571762)
+  on branch `gosei-sy/study-handoff-codebase-review` at `10dbef7`, via
+  `workflow_dispatch`._
+- The CI `e2e` job passes with real output, not a skip. _Evidence: the job log
+  reads `9 passed (12.8s)` after migrations applied and `API ready after 10s`._
+- TEST_STRATEGY's "⚠ unverified" note on E2E is removed. ✅ _(done)_
+
+**State:** every criterion now has evidence; **not accepted** — that is the
+reviewer's call, not this document's. The green run is on a branch, not `main`,
+and it took two CI-configuration fixes the workflow had always needed but never
+exercised, because CI had never run: `global.json` named a runtime version
+(`10.0.0`) where `setup-dotnet` requires an SDK version, and the e2e job applied
+migrations without restoring first (`NETSDK1004`).
 
 ---
 

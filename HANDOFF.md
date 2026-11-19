@@ -7,6 +7,25 @@ Read this, then [CLAUDE.md](CLAUDE.md) (the mandatory working rules), then
 [docs/05-delivery/IMPLEMENTATION_STATUS.md](docs/05-delivery/IMPLEMENTATION_STATUS.md)
 (current state with evidence).
 
+> **Update — 2026-11-19.** Several statements below are superseded; the rest
+> stands. Evidence is in IMPLEMENTATION_STATUS §9 (the 2026-11-19 rows).
+>
+> - **There are commits now.** The working tree was committed by the user
+>   (`3f71156`, `79f9923`). Later work is on branch
+>   `gosei-sy/study-handoff-codebase-review`, pushed with authorization; `main`
+>   is unchanged.
+> - **CI has run, for the first time:** run 44509571762, all three jobs green,
+>   E2E `9 passed`. M01-11 has its evidence and **awaits acceptance**. Getting
+>   there needed two fixes the workflow had always needed: an SDK version in
+>   `global.json`, and a restore before `dotnet-ef` in the e2e job.
+> - **Gates:** 477 backend (0 skipped), 19 frontend, 164 contracts, 9 E2E.
+> - Next.js 16.4.6 (two advisories against 16.4.2); the lockfile now carries
+>   win32 and macOS native bindings; `typecheck` runs `next typegen` first;
+>   `.gitignore` anchors `/artifacts/`; two status-page defects fixed.
+> - Development also happens on **Windows** now, so §8's environment facts are
+>   Linux-specific. Windows E2E notes are in TEST_STRATEGY §7.
+> - Unchanged: **M01-03 awaits re-acceptance; M01-04 has not started.**
+
 > **⚠ There is another project in this workspace.** `/workspace/SocNhoEnglishV2`
 > holds **M13.87**, household/pilot work, `pilot-web.yml`, IndexedDB queues.
 > It is unrelated to this repository. Instructions mentioning households,
