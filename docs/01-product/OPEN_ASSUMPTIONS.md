@@ -213,6 +213,26 @@ a specification will feel like a half-measure.
 **How to validate:** ask developers what they want to receive from a design
 handoff.
 
+### A-16 — An Approver-only member may read but not author
+
+**Status:** Open · **Confidence:** Medium · **Affects:** every authoring endpoint
+from M01-04 on, the studio's affordances
+
+D-3 settled two roles and that only Approver may approve, reject or waive. It
+did not say what a membership holding **Approver alone** may do, and such a
+membership is legal (roles `1..3`). The code documents Member as "may read and
+author" and Approver as "may additionally approve", so M01-04 reads it this way:
+**any membership may read; authoring needs Member.** `POST /api/v1/projects`
+returns `403 authz.member_required` to an Approver-only account.
+
+**If wrong:** either every authoring endpoint drops its Member check (Approver
+implies Member), or provisioning refuses Approver without Member. Both are small
+changes now and grow with each authoring endpoint, so this should be settled
+before M01-05.
+
+**How to validate:** a Product Owner decision — does granting Approver alone
+mean "reviewer only", or is Member implied?
+
 ---
 
 ## Resolved

@@ -73,6 +73,9 @@ The full set currently raised, by module:
 | `authz.no_organization_membership`                                                                | Authenticated, but provisioned by nobody                 |
 | `organization.not_found`                                                                          | Includes any organization that is not the caller's own   |
 | `project.invalid_kind`                                                                            | Kind outside `NewProduct` / `Redesign`                   |
+| `project.name_too_long`                                                                           | More than 200 characters after trimming (M01-04)         |
+| `project.not_found`                                                                               | Includes any project that is not the caller's own        |
+| `authz.member_required`                                                                           | Authoring needs Member; the caller is Approver-only      |
 | `contract.project_required`, `contract.payload_required`                                          |                                                          |
 | `contract.draft_already_open`                                                                     | A draft is already open                                  |
 | `contract.no_draft`, `contract.approver_required`                                                 |                                                          |
@@ -341,6 +344,73 @@ fallback policy, and an authenticated one gets `404` from the router.
 
 ---
 
+## 3b. Projects — implemented (M01-04)
+
+**Implemented on 2026-11-19 under explicit authorization, before M01-03's
+re-acceptance** — it builds on M01-03's authorization model, so a change there
+can require a change here. Not yet independently reviewed.
+
+The organization is always the caller's membership. No request field names one,
+and one supplied anyway is ignored
+(`ProjectEndpointsTests.A_created_project_belongs_to_the_callers_organization_whatever_the_body_says`).
+Reads have no organization predicate: the global query filter on `projects`
+supplies it once the request's scope is opened.
+
+**Roles.** Reading needs any active membership. Creating needs **Member** —
+`OrganizationRoles.Member` is "may read and author", and an Approver-only
+membership is legal. That reading is assumption **A-16**, open for the Product
+Owner.
+
+### `POST /api/v1/projects`
+
+Requires an antiforgery token (`X-CSRF-TOKEN`).
+
+```json
+{ "name": "Storefront", "kind": "NewProduct" }
+```
+
+`kind` is `NewProduct` or `Redesign`, **by exact name** — not a number and not
+another casing, so no client depends on the enum's declaration order. It cannot
+be changed afterwards: there is no update endpoint, and
+`ProjectEndpointsTests.Only_project_creation_binds_a_kind` walks the route table
+so no later endpoint under `/api/v1/projects` can quietly accept one. `name` is
+trimmed and at most 200 characters.
+
+`201 Created`, `Location: /api/v1/projects/{id}`:
+
+```json
+{
+  "id": "019a8c...",
+  "name": "Storefront",
+  "kind": "NewProduct",
+  "createdAt": "2026-11-19T10:00:00+00:00",
+  "updatedAt": null
+}
+```
+
+| Status | When                                                                                       |
+| :----- | :----------------------------------------------------------------------------------------- |
+| `201`  | Created in the caller's organization                                                       |
+| `400`  | `request.invalid` — `errors` names `Name` or `Kind`; `auth.antiforgery_failed`; not JSON   |
+| `401`  | No session                                                                                 |
+| `403`  | `authz.no_organization_membership`; or `authz.member_required` for an Approver-only member |
+
+### `GET /api/v1/projects`
+
+The caller's organization's projects, **newest first**, as `{ "projects": [ … ] }`
+— an object rather than a bare array, so pagination can be added without a
+breaking change. Each item has the shape above. `200`, `401`, or `403`
+(`authz.no_organization_membership`).
+
+### `GET /api/v1/projects/{id}`
+
+One project. `200`, `401`, `403` (`authz.no_organization_membership`), or **`404`
+`project.not_found` — for another organization's project exactly as for an id
+that never existed** (same status, code and detail), so the endpoint cannot be
+used to learn that someone else's project exists.
+
+---
+
 ## 4. Planned endpoints
 
 Listed so M01 has a target, and marked unimplemented so no reader mistakes this
@@ -348,11 +418,7 @@ for a description of the current system.
 
 ### Projects (M01)
 
-| Method | Path                    | Notes                                                |
-| :----- | :---------------------- | :--------------------------------------------------- |
-| `POST` | `/api/v1/projects`      | Body: `{ name, kind }`. `kind` immutable thereafter. |
-| `GET`  | `/api/v1/projects`      | Organization-scoped                                  |
-| `GET`  | `/api/v1/projects/{id}` |                                                      |
+**Implemented** — see §3b.
 
 ### Design contracts (M01)
 

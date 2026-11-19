@@ -9,17 +9,19 @@ have an automated test. An invariant without a test is not implemented.
 
 | Suite                              |   Tests | Needs      | Runtime    |
 | :--------------------------------- | ------: | :--------- | :--------- |
-| `AIDesignStudio.UnitTests`         |     262 | nothing    | ~7 s       |
+| `AIDesignStudio.UnitTests`         |     265 | nothing    | ~7 s       |
 | `AIDesignStudio.ArchitectureTests` |      25 | nothing    | ~7 s       |
-| `AIDesignStudio.IntegrationTests`  |     190 | PostgreSQL | ~95 s      |
+| `AIDesignStudio.IntegrationTests`  |     219 | PostgreSQL | ~95 s      |
 | `frontend` (Vitest)                |      19 | nothing    | ~43 s      |
 | `packages/contracts` (Vitest)      |     164 | nothing    | ~6 s       |
-| **Total**                          | **660** |            | **~2 min** |
+| **Total**                          | **692** |            | **~2 min** |
 
-Measured on 2026-11-19. The backend figures are unchanged since the M01 Wave 3
-**re-review round 2** corrections (2026-11-05); the frontend gained five tests
-for the server-side session forwarding fixed that day. The backend suite is
-`477` of that total (`dotnet test`), and the frontend `183` (`npm test`).
+Measured on 2026-11-19, on the M01-04 branch. M01-04 added 32 backend tests
+(29 integration in `ProjectEndpointsTests`, 3 unit); the frontend gained five
+the same day for the server-side session forwarding. The backend suite is `509`
+of that total (`dotnet test`), and the frontend `183` (`npm test`). Per-class
+figures below count **executed cases** — a theory with four rows is four —
+taken from the xUnit XML report of that run.
 
 **`MigrationUpgradeTests` is a shape this suite did not have before.** It starts
 at a _named prior migration_, seeds the rows a real deployment would already
@@ -66,31 +68,38 @@ clock for anything time-dependent.
 
 Counted by test class, not by file: `StitchAdapterTests.cs` holds two classes.
 
-| Class                        |   Tests | Covers                                                                           |
-| :--------------------------- | ------: | :------------------------------------------------------------------------------- |
-| `JobRecordTests`             |      27 | Lease fencing, crash recovery, attempt exhaustion, retry classification, backoff |
-| `StitchThemeProjectionTests` |      24 | Lossy projection and per-token warnings, including `/color/roles/*` paths        |
-| `StitchDesignProviderTests`  |      20 | Capabilities, cost guard, retry, readiness totality                              |
-| `ScreenApprovalTests`        |      20 | Provenance, contract-drift guard, atomic approval, rejection feedback            |
-| `DesignSystemTests`          |      20 | **Design system lifecycle parity** (added for CX-007)                            |
-| `DesignContractTests`        |      15 | Versioning, immutability, supersession, hashing, collection safety               |
-| `FeatureInventoryTests`      |      14 | Coverage states, handoff gate, invariant-bypass guards                           |
-| `AssetStorageTests`          |      14 | Round-trip, hashing, path confinement                                            |
-| `ArtifactParsingTests`       |      12 | Normalization and fidelity limits                                                |
-| `DesignProjectTests`         |      11 | Workflow kind validation and immutability                                        |
-| `StitchEnvelopeParsingTests` |       5 | Both CLI response shapes, failure modes                                          |
-| `JobDispatcherLeaseTests`    |       3 | Fail-closed renewal: heartbeat loss, heartbeat throwing, shutdown (R3-001B)      |
-| **Total**                    | **185** |                                                                                  |
+| Class                          |   Tests | Covers                                                                           |
+| :----------------------------- | ------: | :------------------------------------------------------------------------------- |
+| `OrganizationMembershipTests`  |      35 | Membership invariants, attributed role changes, audit chain, revocation (M01-03) |
+| `JobRecordTests`               |      27 | Lease fencing, crash recovery, attempt exhaustion, retry classification, backoff |
+| `ProvisioningCommandLineTests` |      26 | `aids-provision` parsing; no option accepts a secret (M01-03)                    |
+| `StitchThemeProjectionTests`   |      24 | Lossy projection and per-token warnings, including `/color/roles/*` paths        |
+| `StitchDesignProviderTests`    |      20 | Capabilities, cost guard, retry, readiness totality                              |
+| `ScreenApprovalTests`          |      20 | Provenance, contract-drift guard, atomic approval, rejection feedback            |
+| `DesignSystemTests`            |      20 | **Design system lifecycle parity** (added for CX-007)                            |
+| `PasswordResetNotifierTests`   |      16 | Reset delivery never leaks the token or throws at request time (M01-02)          |
+| `DesignContractTests`          |      15 | Versioning, immutability, supersession, hashing, collection safety               |
+| `DesignProjectTests`           |      14 | Workflow kind validation and immutability; 200-character name limit (M01-04)     |
+| `FeatureInventoryTests`        |      14 | Coverage states, handoff gate, invariant-bypass guards                           |
+| `AssetStorageTests`            |      14 | Round-trip, hashing, path confinement                                            |
+| `ArtifactParsingTests`         |      12 | Normalization and fidelity limits                                                |
+| `StitchEnvelopeParsingTests`   |       5 | Both CLI response shapes, failure modes                                          |
+| `JobDispatcherLeaseTests`      |       3 | Fail-closed renewal: heartbeat loss, heartbeat throwing, shutdown (R3-001B)      |
+| **Total**                      | **265** |                                                                                  |
 
 ### Architecture tests — boundaries
 
 A modular monolith stays modular only if the boundaries are checked. Written
 down, they erode within a few milestones.
 
-16 tests covering: layering, no persistence or web framework in the domain, no
-provider name outside Infrastructure, adapter and capability placement,
-cross-module coupling, sealed aggregates, no public setters, clock discipline,
-and **no aggregate handing out a mutable collection**.
+25 tests in two classes. `ModuleBoundaryTests` covers layering, no persistence
+or web framework in the domain, no provider name outside Infrastructure, adapter
+and capability placement, cross-module coupling, sealed aggregates, no public
+setters, clock discipline, and **no aggregate handing out a mutable
+collection**. `OrganizationScopeGuardTests` (M01-03) **partitions the whole EF
+model**: every entity type must be filtered, owned by something filtered, or on a
+by-value exemption list with its reason — being unclassified is itself a failure
+— and each project-owned root must carry the composite tenant foreign key.
 
 That last one was added for CX-004: the public-setter test did not catch an
 `IReadOnlyList<T>` whose runtime value is a `List<T>`, which a caller can cast
@@ -106,13 +115,17 @@ These run in a second and catch a class of mistake no reviewer reliably catches.
 A throwaway database per run, migrated from empty. That means **"migrations
 apply cleanly to an empty database" is verified continuously**, not assumed.
 
-| Class                  |  Tests | Covers                                                                                                  |
-| :--------------------- | -----: | :------------------------------------------------------------------------------------------------------ |
-| `DurableJobQueueTests` |     31 | `SKIP LOCKED` concurrency, crash recovery, backoff, idempotency, lease fencing, **database-time claim** |
-| `PersistenceTests`     |     16 | Schema, round-trips, `jsonb`, **database-level approval uniqueness**                                    |
-| `ApiEndpointTests`     |      8 | Real host over HTTP: health, providers, no credential leaks                                             |
-| `JobDispatcherTests`   |      2 | Dispatcher against a real queue: lease loss cancels the handler, terminal failure                       |
-| **Total**              | **57** |                                                                                                         |
+| Class                   |   Tests | Covers                                                                                                                  |
+| :---------------------- | ------: | :---------------------------------------------------------------------------------------------------------------------- |
+| `AuthenticationTests`   |      65 | Real host: session cookie, lockout, password change and reset, TOTP, antiforgery, the Production startup gates (M01-02) |
+| `AuthorizationTests`    |      61 | Organization scope, roles, cross-tenant 404s, provisioning, every tenant root filtered (M01-03)                         |
+| `DurableJobQueueTests`  |      31 | `SKIP LOCKED` concurrency, crash recovery, backoff, idempotency, lease fencing, **database-time claim**                 |
+| `ProjectEndpointsTests` |      29 | Project create/list/read: tenancy, roles, coded refusals, `kind` immutable by route table (M01-04)                      |
+| `PersistenceTests`      |      16 | Schema, round-trips, `jsonb`, **database-level approval uniqueness**                                                    |
+| `ApiEndpointTests`      |       8 | Real host over HTTP: health, providers, no credential leaks                                                             |
+| `MigrationUpgradeTests` |       7 | Upgrades from a **named prior migration**, not only from empty (M01-03)                                                 |
+| `JobDispatcherTests`    |       2 | Dispatcher against a real queue: lease loss cancels the handler, terminal failure                                       |
+| **Total**               | **219** |                                                                                                                         |
 
 What needs a real database and why:
 
@@ -341,6 +354,10 @@ bare name. A simplified fixture would have hidden it.
 | Health output leaks no credentials                     | `ApiEndpointTests`                         | Integration        |
 | Migrations apply to an empty database                  | `DatabaseFixture`                          | **DB**             |
 | Module boundaries hold                                 | `ModuleBoundaryTests`                      | Architecture       |
+| Another tenant's project is 404, like a missing one    | `ProjectEndpointsTests`                    | **DB** + host      |
+| A project's organization comes from the membership     | `ProjectEndpointsTests`                    | **DB** + host      |
+| No endpoint accepts `kind` after creation              | `ProjectEndpointsTests` (route table)      | Host               |
+| Authoring needs Member; reading needs any membership   | `ProjectEndpointsTests`                    | **DB** + host      |
 
 ---
 
@@ -364,7 +381,7 @@ Stated rather than implied.
 
 ```bash
 # Everything
-dotnet test                                    # 477
+dotnet test                                    # 509
 npm test                                       # 19 + 164
 
 # One suite

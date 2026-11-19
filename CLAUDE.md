@@ -105,7 +105,7 @@ Run these and paste the real output. Never report a result you did not observe.
 
 ```bash
 dotnet build                                   # warnings are errors
-dotnet test                                    # 477 tests
+dotnet test                                    # 509 tests
 dotnet format --verify-no-changes              # style gate
 npm test                                       # 19 frontend + 164 contract tests
 npm run typecheck && npm run lint
@@ -198,8 +198,8 @@ backend/src/
   AIDesignStudio.Worker            job dispatcher
   AIDesignStudio.Provisioning      aids-provision — operator provisioning CLI (ADR-0009)
 backend/tests/
-  AIDesignStudio.UnitTests         262 tests
-  AIDesignStudio.IntegrationTests  190 tests (needs PostgreSQL)
+  AIDesignStudio.UnitTests         265 tests
+  AIDesignStudio.IntegrationTests  219 tests (needs PostgreSQL)
   AIDesignStudio.ArchitectureTests  25 tests (boundary + organization-scope guards)
 frontend/                          Next.js studio
 packages/contracts/                shared JSON Schemas + TS types

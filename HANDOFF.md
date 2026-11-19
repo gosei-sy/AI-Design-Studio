@@ -24,7 +24,12 @@ Read this, then [CLAUDE.md](CLAUDE.md) (the mandatory working rules), then
 >   `.gitignore` anchors `/artifacts/`; two status-page defects fixed.
 > - Development also happens on **Windows** now, so §8's environment facts are
 >   Linux-specific. Windows E2E notes are in TEST_STRATEGY §7.
-> - Unchanged: **M01-03 awaits re-acceptance; M01-04 has not started.**
+> - **M01-03 still awaits re-acceptance.** M01-04 (project endpoints) was then
+>   **authorized ahead of it** and implemented on branch
+>   `gosei-sy/m01-04-project-endpoints` — unmerged until M01-03 is accepted, not
+>   reviewed. "Do not start M01-04" below is superseded by that authorization,
+>   not by M01-03's acceptance. Assumption **A-16** (what an Approver-only member
+>   may do) is open and should be settled before M01-05.
 
 > **⚠ There is another project in this workspace.** `/workspace/SocNhoEnglishV2`
 > holds **M13.87**, household/pilot work, `pilot-web.yml`, IndexedDB queues.

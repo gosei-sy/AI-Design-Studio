@@ -13,8 +13,10 @@ M00 approval by itself.
 
 **Wave 3 is the authorized scope**, and within it **M01-03 only**. Wave 1 is
 complete and its corrections approved; **M01-02 was independently accepted on
-2026-11-03**. Work outside the authorized wave still needs authorization, and
-**M01-04 must not begin until M01-03 is independently accepted.**
+2026-11-03**. Work outside the authorized wave still needs authorization.
+**M01-04 was explicitly authorized on 2026-11-19 ahead of M01-03's acceptance**
+— the sequencing below still holds for everything after it, and M01-04 stays
+unmerged until M01-03 is accepted.
 No task is complete until its acceptance criteria have been executed with
 evidence. Current wave state:
 
@@ -23,10 +25,11 @@ evidence. Current wave state:
 | **M01-01**   | 🚧 Offline prep done                                        | Live execution blocked on **D-1/D-2**; A-08 and A-09 stay open                                                                                                                                                              |
 | **M01-02**   | ✅ **APPROVED with non-blocking findings**                  | Independently accepted 2026-11-03. D-8 unresolved (pre-production gate); MFA recovery codes remain a recorded gap                                                                                                           |
 | **M01-03**   | 🔬 **Round-2 corrections applied — awaiting re-acceptance** | Three review rounds, nine findings, all corrected. W3-RR-001 accepted in round 2. **D-3 and D-9 resolved** (ADR-0009, as amended by A1–A4). Evidence: [round-2 response](docs/05-delivery/reviews/M01_WAVE3_R2_RESPONSE.md) |
-| M01-04 … 06  | ⛔ Not started                                              | Each waits on its predecessor being accepted                                                                                                                                                                                |
+| **M01-04**   | 🔬 **Implemented, not reviewed**                            | Authorized 2026-11-19 ahead of M01-03 acceptance; branch `gosei-sy/m01-04-project-endpoints`, unmerged until M01-03 is accepted. Assumption A-16 open                                                                       |
+| M01-05, 06   | ⛔ Not started                                              | Each waits on its predecessor being accepted                                                                                                                                                                                |
 | M01-07/08/09 | ⛔ Not started                                              | Gated on M01-01 resolving **A-08** positively                                                                                                                                                                               |
 | M01-10       | ⛔ Not started                                              | Needs M01-04 … M01-09 accepted                                                                                                                                                                                              |
-| **M01-11**   | ✅ **Browser unblocked**                                    | **7/7 specs pass locally**, including the browser auth flow; acceptance needs the CI run                                                                                                                                    |
+| **M01-11**   | ✅ **Evidence complete — awaiting acceptance**              | **9/9 specs pass locally and in CI** (first CI run 44509571762, 2026-11-19), including the browser auth flow                                                                                                                |
 | **M01-12**   | ⛔ **BLOCKED**                                              | Docker is not installed in this environment                                                                                                                                                                                 |
 
 Three items carried over from M00 — see
@@ -242,12 +245,36 @@ is modelled explicitly.
 
 **Size:** S · **Depends on:** M01-03
 
+**State:** 🔬 **implemented 2026-11-19, not reviewed, not accepted.** Started
+**before M01-03's re-acceptance under explicit authorization** (recorded in
+IMPLEMENTATION_STATUS §9), on branch `gosei-sy/m01-04-project-endpoints`, not to
+be merged until M01-03 is accepted — it builds on M01-03's authorization model.
+
 **Acceptance:**
 
 - `POST /api/v1/projects` returns `201`; `GET` list and by-id are
-  organization-scoped.
-- `kind` cannot be changed — no endpoint accepts it after creation.
-- Domain errors surface as problem details with their codes.
+  organization-scoped. _Evidence: `ProjectEndpointsTests` —
+  `Creating_a_project_returns_201_with_its_location_and_body`,
+  `Listing_returns_only_the_callers_organizations_projects`,
+  `Another_organizations_project_is_indistinguishable_from_a_missing_one`._
+- `kind` cannot be changed — no endpoint accepts it after creation. _Evidence:
+  `No_method_on_a_project_changes_its_kind` (PUT and PATCH are `405`, kind
+  unchanged) and `Only_project_creation_binds_a_kind`, which walks the route
+  table._
+- Domain errors surface as problem details with their codes. _Evidence: every
+  refusal in the suite asserts a `code` — `request.invalid`,
+  `project.not_found`, `authz.no_organization_membership`,
+  `authz.member_required`, `auth.antiforgery_failed`._
+
+**Decided while implementing**, each with a test: reading needs any membership
+and creating needs Member (assumption **A-16**); `kind` is accepted only by exact
+name; names over 200 characters are `project.name_too_long` (a domain rule, since
+the column is `varchar(200)`); the list is newest first inside a `projects`
+object. **Found and fixed:** a body that is not JSON was a `500` in Development on
+every endpoint, auth included (`ThrowOnBadRequest`).
+
+**Verified by mutation:** removing the tenant filter on reads fails four tests,
+removing the antiforgery filter fails one, removing the Member check fails one.
 
 ---
 

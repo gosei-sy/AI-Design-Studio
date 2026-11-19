@@ -213,7 +213,7 @@ Then open <https://localhost:3000>.
 ## Tests
 
 ```bash
-dotnet test                 # 477: unit + architecture + integration
+dotnet test                 # 509: unit + architecture + integration
 npm test                    # 183: 19 frontend + 164 contract schema
 ```
 
@@ -307,8 +307,8 @@ backend/src/
   AIDesignStudio.Worker            durable job dispatcher
   AIDesignStudio.Provisioning      aids-provision — operator provisioning CLI (ADR-0009)
 backend/tests/
-  AIDesignStudio.UnitTests         262 tests
-  AIDesignStudio.IntegrationTests  190 tests (needs PostgreSQL)
+  AIDesignStudio.UnitTests         265 tests
+  AIDesignStudio.IntegrationTests  219 tests (needs PostgreSQL)
   AIDesignStudio.ArchitectureTests  25 tests (boundary + organization-scope guards)
 frontend/                          Next.js studio
 packages/contracts/                shared JSON Schemas + TypeScript types
