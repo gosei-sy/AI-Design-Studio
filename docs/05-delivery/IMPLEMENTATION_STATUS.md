@@ -13,6 +13,12 @@ npm test      → 19 frontend · 169 contracts
 E2E           → 9/9 locally (counted separately; needs two processes)
 ```
 
+**The same figures in CI**, on the branches as pushed (`workflow_dispatch`; nothing is
+merged): run 44523510278 for M01-04 (`total: 509, skipped: 0`, E2E `9 passed`) and
+run 44543585566 for M01-05 at `5ae05e3` (`total: 824, skipped: 0`, 19 + 169,
+`found 0 vulnerabilities`, model in sync, E2E `9 passed`). Green CI is evidence that
+the gates pass on a clean machine; it is not a review.
+
 **M00's own closure figure was 436** and is preserved as a historical snapshot in
 §4, which is not updated as M01 progresses.
 
