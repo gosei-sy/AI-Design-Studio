@@ -25,7 +25,8 @@ internal sealed class StudioApiFactory(
     string environment = "Development",
     bool revalidateSessionEveryRequest = false,
     string passwordResetTransport = "DevelopmentLog",
-    bool logResetTokens = false) : WebApplicationFactory<Program>
+    bool logResetTokens = false,
+    Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor[]? dbInterceptors = null) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -43,6 +44,18 @@ internal sealed class StudioApiFactory(
                 .PersistKeysToDbContext<Infrastructure.Persistence.AppDbContext>()
                 .ProtectKeysWithCertificate(TestKeyProtectionCertificate.Value)
                 .SetApplicationName("AIDesignStudio"));
+        }
+
+        if (dbInterceptors is { Length: > 0 })
+        {
+            // For tests that have to hold two requests at a known point — the
+            // only way to make a race happen on purpose rather than by luck.
+            // Added to the host's own registration, so everything else about
+            // the context is exactly what ships.
+            builder.ConfigureServices(services => Microsoft.Extensions.DependencyInjection
+                .EntityFrameworkServiceCollectionExtensions
+                .ConfigureDbContext<Infrastructure.Persistence.AppDbContext>(
+                    services, options => options.AddInterceptors(dbInterceptors)));
         }
 
         if (revalidateSessionEveryRequest)
@@ -153,6 +166,34 @@ internal sealed class StudioClient(HttpClient http)
         };
 
         request.Headers.Add(AntiforgeryHeader, token);
+
+        return await http.SendAsync(request, cancellationToken);
+    }
+
+    /// <summary>
+    /// Sends any method with a fresh antiforgery token and, when given, a body
+    /// of **exactly** this text — for endpoints whose input is a document, where
+    /// whitespace, key order and number spelling are part of what is tested.
+    /// </summary>
+    public async Task<HttpResponseMessage> SendJsonAsync(
+        HttpMethod method,
+        string path,
+        string? json,
+        CancellationToken cancellationToken,
+        string contentType = "application/json",
+        bool antiforgery = true)
+    {
+        using var request = new HttpRequestMessage(method, path);
+
+        if (json is not null)
+        {
+            request.Content = new StringContent(json, System.Text.Encoding.UTF8, contentType);
+        }
+
+        if (antiforgery)
+        {
+            request.Headers.Add(AntiforgeryHeader, await GetAntiforgeryTokenAsync(cancellationToken));
+        }
 
         return await http.SendAsync(request, cancellationToken);
     }

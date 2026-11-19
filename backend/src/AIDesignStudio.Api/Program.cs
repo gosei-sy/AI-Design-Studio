@@ -83,14 +83,21 @@ app.UseExceptionHandler(new ExceptionHandlerOptions
 
         context.Response.StatusCode = StatusCodes.Status409Conflict;
 
-        await context.Response.WriteAsJsonAsync(new ProblemDetails
-        {
-            Type = $"https://aidesignstudio.dev/problems/{domain.Code}",
-            Title = "Domain invariant violated",
-            Status = StatusCodes.Status409Conflict,
-            Detail = domain.Message,
-            Extensions = { ["code"] = domain.Code, ["traceId"] = context.TraceIdentifier },
-        });
+        // application/problem+json, stated: WriteAsJsonAsync defaults to
+        // application/json, which is what this sent until M01-05 gave an
+        // endpoint a domain refusal to return and a test read the header.
+        await context.Response.WriteAsJsonAsync(
+            new ProblemDetails
+            {
+                Type = $"https://aidesignstudio.dev/problems/{domain.Code}",
+                Title = "Domain invariant violated",
+                Status = StatusCodes.Status409Conflict,
+                Detail = domain.Message,
+                Extensions = { ["code"] = domain.Code, ["traceId"] = context.TraceIdentifier },
+            },
+            options: null,
+            contentType: "application/problem+json",
+            context.RequestAborted);
     },
 });
 
@@ -152,6 +159,7 @@ app.MapHealthEndpoints();
 app.MapAuthEndpoints();
 app.MapOrganizationEndpoints();
 app.MapProjectEndpoints();
+app.MapContractEndpoints();
 app.MapProviderEndpoints();
 
 app.Run();
